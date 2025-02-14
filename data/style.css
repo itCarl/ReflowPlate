@@ -1,0 +1,42 @@
+th {
+    width: 50%;
+}
+
+nav {
+    background-color: #143642;
+}
+
+.live-dot {
+    animation: fadeinout 2.25s ease-in-out infinite;
+}
+
+.page-section {
+    padding: 8rem 0;
+    position: relative;
+}
+
+.text-white-75 {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.text-c-muted {
+    color: rgba(var(--bs-body-color-rgb),.40)!important;
+}
+
+hr.divider {
+    max-width: 3.25rem;
+    border-width: 0.2rem;
+    border-color: #143642;
+    margin: 0 auto;
+    opacity: 1;
+}
+
+@-webkit-keyframes fadeinout {
+  0%,100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+@keyframes fadeinout {
+  0%,100% { opacity: 0; }
+  50% { opacity: 1; }
+}
