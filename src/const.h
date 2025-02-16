@@ -45,24 +45,4 @@
 #define POS_SET_TEMPERATURE 11
 
 
-
-
-#ifdef PRINT_DEBUG
-  #define DEBUG_PRINT(x) Serial.print(x)
-  #define DEBUG_PRINTLN(x) Serial.println(x)
-  #define DEBUG_PRINTF(x...) Serial.printf(x)
-#else
-  #define DEBUG_PRINT(x)
-  #define DEBUG_PRINTLN(x)
-  #define DEBUG_PRINTF(x...)
-#endif
-
-#ifdef PRINT_PLOT
-  #define PLOT_PRINTLN(x) Serial.println(x)
-  #define PLOT_PRINTF(x...) Serial.printf(x)
-#else
-  #define PLOT_PRINTLN(x)
-  #define PLOT_PRINTF(x...)
-#endif
-
 #endif

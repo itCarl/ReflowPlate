@@ -2,7 +2,6 @@
 #define BaseProfile_h
 
 #include <Arduino.h>
-#include "../const.h"
 
 enum State { 
     IDLE, 
