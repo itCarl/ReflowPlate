@@ -4,8 +4,8 @@
 
 // utils.cpp
 inline unsigned long Seconds(unsigned long sec);
-float dot2round(float x);
-double dot2round(double x);
+float round(float x, uint8_t decimals);
+double round(double x, uint8_t decimals);
 uint16_t roundToNearestFive(uint16_t num);
 double computePID(double setpoint, double input, double kp, double ki, double kd);
 BaseProfile* getPreviousProfile();

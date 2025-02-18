@@ -12,7 +12,7 @@
 #include <ElegantOTA.h>
 #include <ArduinoJson.h>
 #include <LittleFS.h>
-#include <Wire.h> 
+#include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <Thermistor.h>
 #include <NTC_Thermistor.h>
@@ -36,11 +36,11 @@
 #include "profiles/Test01Profile.h"
 
 #ifndef CLIENT_SSID
-  #define CLIENT_SSID "none"
+    #define CLIENT_SSID "none"
 #endif
 
 #ifndef CLIENT_PASS
-  #define CLIENT_PASS ""
+    #define CLIENT_PASS ""
 #endif
 
 // GLOBAL VARIABLES
@@ -75,15 +75,17 @@ RP_GLOBAL PIDAutotuner tuner;
 #endif
 
 struct TemperatureData {
-  unsigned long timestamp;  // 4 bytes (on ESP32)
-  double input;             // 8 bytes (on ESP32)
-  double setpoint;          // 8 bytes (on ESP32)
+    unsigned long timestamp;    // 4 bytes (on ESP32)
+    uint8_t pwr;                // 1 byte  (on ESP32)
+    double input;               // 8 bytes (on ESP32)
+    double setpoint;            // 8 bytes (on ESP32)
 
-  void serialize(JsonObject& obj) const {
-    obj["timestamp"] = timestamp;
-    obj["input"] = input;
-    obj["setpoint"] = setpoint;
-  }
+    void serialize(JsonObject& obj) const {
+        obj["timestamp"] = timestamp;
+        obj["pwr"] = pwr;
+        obj["temp"] = input;
+        obj["setpoint"] = setpoint;
+    }
 };
 RP_GLOBAL RingBuffer<TemperatureData> temperatureData _INIT_N(((150)));
 
@@ -110,10 +112,10 @@ RP_GLOBAL double Ki _INIT(0.070);
 RP_GLOBAL double Kd _INIT(320);
 
 RP_GLOBAL BaseProfile* profiles[3] _INIT_N(({
-  // new CooldownProfile(),
-  new LowTempProfile(),
-  new HighTempProfile(),
-  new Test01Profile(),
+    // new CooldownProfile(),
+    new LowTempProfile(),
+    new HighTempProfile(),
+    new Test01Profile(),
 }));
 
 RP_GLOBAL uint8_t selectedProfileIndex _INIT(0);
@@ -187,21 +189,21 @@ RP_GLOBAL uint8_t hotPlateRight[8] _INIT_N(({
 }));
 
 #ifdef PRINT_DEBUG
-  #define DEBUG_PRINT(x) Serial.print(x)
-  #define DEBUG_PRINTLN(x) Serial.println(x)
-  #define DEBUG_PRINTF(x...) Serial.printf(x)
+    #define DEBUG_PRINT(x) Serial.print(x)
+    #define DEBUG_PRINTLN(x) Serial.println(x)
+    #define DEBUG_PRINTF(x...) Serial.printf(x)
 #else
-  #define DEBUG_PRINT(x)
-  #define DEBUG_PRINTLN(x)
-  #define DEBUG_PRINTF(x...)
+    #define DEBUG_PRINT(x)
+    #define DEBUG_PRINTLN(x)
+    #define DEBUG_PRINTF(x...)
 #endif
 
 #ifdef PRINT_PLOT
-  #define PLOT_PRINTLN(x) Serial.println(x)
-  #define PLOT_PRINTF(x...) Serial.printf(x)
+    #define PLOT_PRINTLN(x) Serial.println(x)
+    #define PLOT_PRINTF(x...) Serial.printf(x)
 #else
-  #define PLOT_PRINTLN(x)
-  #define PLOT_PRINTF(x...)
+    #define PLOT_PRINTLN(x)
+    #define PLOT_PRINTF(x...)
 #endif
 
 class ReflowPlate

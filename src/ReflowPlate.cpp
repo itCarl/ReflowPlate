@@ -87,7 +87,7 @@ void ReflowPlate::loop()
       //   digitalWrite(RELAY, tuner.getOutput() > 0 ? HIGH : LOW);
       if (!tuner.isFinished()) {
         if((millis() - lastTempControl) > tempControlInterval) {
-          lastTempControl = millis(); 
+          lastTempControl = millis();
           double output = tuner.tunePID(Input);
           digitalWrite(RELAY, (output > (WindowSize / 2)) ? HIGH : LOW);
         }
@@ -100,24 +100,24 @@ void ReflowPlate::loop()
         Ki = tuner.getKi();
         Kd = tuner.getKd();
         // tuner.calculatePIDParams(Kp, Ki, Kd);
-  
+
         clearFirstRow();
         LCD.home();
         LCD.print("Tuning Complete");
         clearSecondRow();
         LCD.setCursor(0, 1);
         LCD.printf("%.2f|%.2f|%.2f", Kp, Ki, Kd);
-  
+
         Serial.println("Tuning Complete!");
         Serial.print("Kp: "); Serial.println(Kp);
         Serial.print("Ki: "); Serial.println(Ki);
         Serial.print("Kd: "); Serial.println(Kd);
-  
+
         PIDTuningComplete = true;
-        digitalWrite(RELAY, LOW);      
+        digitalWrite(RELAY, LOW);
         delay(30*1000); //30sec
         LCD.clear();
-        showTemperatures(Input, mode == 1 ? IDLE_SAFETY_TEMPERATURE : readPoti()); 
+        showTemperatures(Input, mode == 1 ? IDLE_SAFETY_TEMPERATURE : readPoti());
         LCD.home();
         LCD.print(selectedProfile->getDisplayName());
       }
@@ -127,29 +127,29 @@ void ReflowPlate::loop()
       showTemperature(POS_SET_TEMPERATURE, Input);
       LCD.print((char)223);
       LCD.print("C");
-  
+
       LCD.setCursor(13 + (Input < 10) + (Input < 100), 0);
       LCD.print(Input);
       clearSecondRow();
       LCD.setCursor(0, 1);
       LCD.printf("%.2f|%.2f|%.2f", Kp, Ki, Kd);
-  
-      return; 
+
+      return;
     }
   #endif
-  
+
     ElegantOTA.loop();
     // dnsServer.processNextRequest();
-  
-  
+
+
     if(millis() - lastTempControl > tempControlInterval)
     {
-      lastTempControl = millis(); 
+      lastTempControl = millis();
       Input = therm1->readCelsius();
       filteredTemperature = alpha * Input + (1 - alpha) * filteredTemperature;
       Input = filteredTemperature;
   #ifdef USE_PID
-  
+
       Output = computePID(Setpoint, Input, Kp, Ki, Kd);
       if (Output < 0 || Output > WindowSize) {
         // DEBUG_PRINTF("PID Output out of range: %f\n", Output);
@@ -175,18 +175,18 @@ void ReflowPlate::loop()
       }
   #endif
     }
-  
+
     if(millis() - lastControlTime > controlInterval)
     {
       rawPotiValue = readPoti();
-      
+
       // Apply hysteresis
       if (abs(potiValue - rawPotiValue) > 4) {
           potiValue = roundToNearestFive(rawPotiValue);
       } else {
           rawPotiValue = potiValue;
       }
-  
+
       if(potiValue != oldPotiValue && (mode == 1 || mode == 3)) {
         oldPotiValue = potiValue;
         Setpoint = potiValue;
@@ -194,7 +194,7 @@ void ReflowPlate::loop()
         mode = 3;
         mode3StartTime = millis();
       }
-  
+
       if(!digitalRead(BTN_PREV) && btnPrevPressed && mode != 2) {
         btnPrevPressed = false;
         mode = 1;
@@ -205,7 +205,7 @@ void ReflowPlate::loop()
       } else if(digitalRead(BTN_PREV) && !btnPrevPressed && mode != 2) {
         btnPrevPressed = true;
       }
-  
+
       if(!digitalRead(BTN_NEXT) && btnNextPressed && mode != 2) {
         btnNextPressed = false;
         mode = 1;
@@ -216,7 +216,7 @@ void ReflowPlate::loop()
       } else if(digitalRead(BTN_NEXT) && !btnNextPressed && mode != 2) {
         btnNextPressed = true;
       }
-  
+
       if(!digitalRead(BTN_CONFIRM) && btnConfirmPressed) {
         btnConfirmPressed = false;
         if(mode == 1) {
@@ -227,7 +227,7 @@ void ReflowPlate::loop()
           delay(1000);
           selectedProfile->startReflow();
         } else if(mode == 2) {
-          mode = 1;       
+          mode = 1;
           clearFirstRow();
           LCD.home();
           LCD.print("Aborted!");
@@ -238,7 +238,7 @@ void ReflowPlate::loop()
       } else if(digitalRead(BTN_CONFIRM) && !btnConfirmPressed) {
         btnConfirmPressed = true;
       }
-  
+
       if(mode == 0 || mode == 1) {
         Setpoint = IDLE_SAFETY_TEMPERATURE;
       } else if(mode == 2) {
@@ -252,24 +252,24 @@ void ReflowPlate::loop()
           LCD.print(selectedProfile->getDisplayName());
         }
       }
-  
+
       if(mode == 2 && selectedProfile->isReflowComplete()) {
         mode = 1;
         clearFirstRow();
         LCD.home();
         LCD.print(selectedProfile->getDisplayName());
       }
-  
-      lastControlTime = millis(); 
+
+      lastControlTime = millis();
     }
-    
-  
+
+
   #ifdef USE_PID
     if (millis() - windowStartTime > WindowSize)
     { //time to shift the Relay Window
       windowStartTime += WindowSize;
     }
-  
+
     unsigned long onTime = Output;
     if ((Output > (millis() - windowStartTime)) && (mode != 1 && Setpoint >= IDLE_SAFETY_TEMPERATURE)) {
       if(!relayActive) {
@@ -295,39 +295,40 @@ void ReflowPlate::loop()
       }
     }
   #endif
-  
+
     if (millis() < nextUpdateTime) return;
     nextUpdateTime = millis() + updateInterval;
     lastUpdateTime = millis();
     // LCD.clear(); looks ugly
-  
+
     LCD.home();
     // LCD.write(0);
     // LCD.write(1);
-    // LCD.write(2);  
+    // LCD.write(2);
     // LCD.write(3);
     // LCD.write(6);
     // LCD.write(7);
     if(mode == 1){
-  
+
     } else if(mode == 2) {
       printSpaceBetween(selectedProfile->showProfileState(), String(selectedProfile->getTimeLeft()) + "s");
     } else if(mode == 3) {
       printSpaceBetween("PotiControl", String(mode3ElapsedTime / 1000) + "s");
     }
-    
+
     showTemperatures(Input <= 5 ? therm1->readCelsius() : Input, Setpoint);
     oldCurrentTemp = Input;
     oldSetTemp = Setpoint;
-  
+
     // buffer temperature data
     TemperatureData td;
     td.timestamp = millis();
-    td.input = dot2round(Input);
-    td.setpoint = Setpoint;
+    td.pwr = (uint8_t)((Output * 100) / WindowSize);
+    td.input = round(Input, 1);
+    td.setpoint = round(Setpoint, 1);
     temperatureData.push(td);
     notify();
-  
+
     DEBUG_PRINTLN("--DEBUG--");
   #ifdef USE_PID
     DEBUG_PRINTLN(Output);
@@ -420,7 +421,7 @@ void ReflowPlate::initConnection()
             WiFi.softAP(apSSID);
             // dnsServer.start(53, "*", WiFi.softAPIP());
             server.addHandler(new CaptiveRequestHandler()).setFilter(ON_AP_FILTER); //only when requested from AP+
-            
+
             IPAddress IP = WiFi.softAPIP();
             LCD.clear();
             LCD.home();
@@ -435,7 +436,7 @@ void ReflowPlate::initConnection()
         delay(2500);
         connectionCounter++;
     }
-    
+
     LCD.setCursor(13, 0);
     LCD.print(".");
     delay(1000);

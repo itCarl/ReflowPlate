@@ -21,24 +21,70 @@
     <body>
         <div class="content-wrapper">
             <div class="header">
-                <h2> Reflow Plate </h2>
-                <hr>
+                <div class="brand-logo">
+                    <img src="/images/heat.svg" alt="logo" style="width: 40px;">
+                </div>
+                <h3> Reflow Plate </h3>
             </div>
             <div class="body">
-                <div class="actions">
+                <div class="actions" style="width: 25%;">
                     <button style="margin-bottom: 5rem;">Cooldown</button>
                     <button>Start</button>
-                    Profiles
-                    <button>Profile01</button>
-                    <button>Profile02</button>
-                    <button>Profile03</button>
+                    <div class="profiles">
+                        Profiles
+                        <button>Profile01</button>
+                        <button>Profile02</button>
+                        <button>Profile03</button>
+                    </div>
+                    <hr/>
+                    <div class="container pidControl">
+                        <div class="row">
+                            <div class="column"><label for="nameField">P</label></div>
+                            <div class="column"><label for="nameField">I</label></div>
+                            <div class="column"><label for="nameField">D</label></div>
+                        </div>
+                        <div class="row">
+                            <div class="column">
+                                <input type="number" id="inP" placeholder="">
+                            </div>
+                            <div class="column">
+                                <input type="number" id="inI" placeholder="">
+                            </div>
+                            <div class="column">
+                                <input type="number" id="inD" placeholder="">
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="content">
-                    <div id="main" style="height: 100%;"></div>
+                    <div class="container info" style="padding-bottom: 1rem;">
+                        <div class="row">
+                            <div class="column">Power %</div>
+                            <div class="column">Temperature</div>
+                            <div class="column">Setpoint</div>
+                        </div>
+                        <div class="row">
+                            <div class="column"><span id="pwr">0</span>%</div>
+                            <div class="column"><span id="currentTemp">200</span>°C</div>
+                            <div class="column"><span id="setpointTemp">200</span>°C</div>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <div id="main" style="height: 100%;"></div>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <footer>
+            <p>
+                <span class="bold">ReflowPlate management software</span> <span class="small">by Maximilian Mewes</span>
+            </p>
+            <p>
+                Version v1.0.0 | Build: 2025-02-16 20:58 |
+            </p>
+        </footer>
 
         <!-- Scripts -->
         <!-- <script src="https://cdn.plot.ly/plotly-3.0.0.min.js" charset="utf-8"></script> -->

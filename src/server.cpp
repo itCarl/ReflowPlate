@@ -6,10 +6,10 @@
 * |
 * ================================================
 */
- 
+
 void initServer()
-{  
-    // Websocket  
+{
+    // Websocket
     ws.onEvent(onEvent);
     server.addHandler(&ws);
 
@@ -18,6 +18,7 @@ void initServer()
         // request->send(200, "text/plain", "Hello, world");
         request->send(LittleFS, "/index.html", "text/html", false, processor);
     });
+
     server.serveStatic("/", LittleFS, "/");
 
     // style route
@@ -30,7 +31,7 @@ void initServer()
         request->send(LittleFS, "/script.js", "text/javascript");
     });
 
-    //
+    // not found route
     server.onNotFound([](AsyncWebServerRequest *request){
         request->send(404, "text/plain", "Not found");
     });
@@ -40,30 +41,54 @@ void notify()
 {
     JsonDocument doc;
     String out;
-    out.reserve(2048);    // optional
+    // out.reserve(2048);
 
     JsonObject meta = doc["meta"].to<JsonObject>();
-    JsonArray temp = doc["temp"].to<JsonArray>();    
-    temperatureData.serializeToJson(temp);
+    meta["freeHeap"] = ESP.getFreeHeap();
+    meta["kp"] = Kp;
+    meta["ki"] = Ki;
+    meta["kd"] = Kd;
 
-    // char buffer[2000];
-    // size_t len = serializeJson(doc, buffer);
-    // ws.textAll(buffer, len);
+    JsonArray temp = doc["temp"].to<JsonArray>();
+    temperatureData.serializeToJson(temp);
 
     serializeJson(doc, out);
     ws.textAll(out);
 }
 
-void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) 
+void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
 {
     AwsFrameInfo *info = (AwsFrameInfo*)arg;
     if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
-        data[len] = 0;
-        if (strcmp((char*)data, "update") == 0) {
+        data[len] = '\0';  // Null-Terminierung für String-Handling
+        DEBUG_PRINTLN("[WS] Message incoming.");
+
+        JsonDocument doc;
+        DeserializationError error = deserializeJson(doc, data);
+
+        if (error) {
+            DEBUG_PRINT("[WS] json parsing error: ");
+            DEBUG_PRINTLN(error.c_str());
+            return;
+        }
+
+        // get command
+        const char* cmd = doc["cmd"];
+
+        if (strcmp(cmd, "upt") == 0) {
             notify();
-            DEBUG_PRINTLN("WS message received.");
+            DEBUG_PRINTLN("Update command received.");
+        } else if (strcmp(cmd, "profiles") == 0) {
+
         }
     }
+    // if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
+    //     data[len] = 0;
+    //     if (strcmp((char*)data, "update") == 0) {
+    //         notify();
+    //         DEBUG_PRINTLN("WS message received.");
+    //     }
+    // }
 }
 
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len)
@@ -89,7 +114,7 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
 String processor(const String& var)
 {
   // return "no data.";
-  
+
   // if(var == "BATTERY_VOLTAGE") {
   //   return "0.00 v";
   // }

@@ -1,9 +1,12 @@
 // var gateway = `ws://${window.location.hostname}/ws`;
 var gateway = `ws://192.168.178.81/ws`;
 var websocket;
-var time;
-var lastTime = 0;
+var start;
 var myChart;
+var cfg = {
+    profiles: [{}],
+    idleSafetyTemperature
+};
 
 window.addEventListener('load', onLoad);
 
@@ -19,7 +22,8 @@ function initWebSocket()
 function onOpen(event)
 {
     console.log('Connection opened');
-    update();
+    getConfig();
+    start = new Date();
 }
 
 function onClose(event)
@@ -28,25 +32,59 @@ function onClose(event)
     setTimeout(initWebSocket, 2000);
 }
 
+function enrichData(data)
+{
+    if (!data || !data.length) return [];
+
+    const firstTimestamp = data[data.length - 1].timestamp;
+    const startTime = start;
+    const currentTime = new Date();
+
+    return data.map(entry => {
+        const timeDifference = firstTimestamp - entry.timestamp;
+        const entryTime = new Date(currentTime.getTime() - timeDifference);
+
+        return {
+            time: entryTime.toLocaleTimeString(),
+            temp: entry.temp,
+            setpoint: entry.setpoint,
+            timestamp: entry.timestamp,
+            pwr: entry.setpoint <= 15 ? entry.pwr : 0,
+        };
+    });
+}
+
 function onMessage(event)
 {
     let data = JSON.parse(event.data);
-    let metaData = data.meta;
-    let tempData = data.temp;
-
     // console.log(event);
     // console.log(data.temp);
 
+    // process Metadata
+    let metaData = data.meta;
+    document.getElementById('inP').placeholder = metaData.kp;
+    document.getElementById('inI').placeholder = metaData.ki;
+    document.getElementById('inD').placeholder = metaData.kd;
+
+    // process Temperature data
+    let tempData = enrichData(leftPadArray(data.temp, {
+        temp: null,
+        setpoint: null,
+        timestamp: 0,
+    }, 150));
+
+    // console.log(tempData);
+
+    const mostRecentData = tempData[tempData.length - 1];
+    document.getElementById('currentTemp').innerHTML = mostRecentData.temp;
+    document.getElementById('setpointTemp').innerHTML = mostRecentData.setpoint;
+    document.getElementById('pwr').innerHTML = mostRecentData.pwr;
+
     myChart.setOption({
-        grid: {
-            left: "5%",
-            top: 30,
-            right: "5%",
-            bottom: 30
-        },
         xAxis: {
             // data: Array.from({ length: tempData.length }, (_, i) => i)
-            data: tempData.map(item => item.timestamp)
+            // data: tempData.map(item => item.timestamp)
+            data: tempData.map(item => item.time)
         },
         series: [
             {
@@ -58,7 +96,7 @@ function onMessage(event)
             },
             {
                 name: 'dataInput',
-                data: tempData.map(item => item.input),
+                data: tempData.map(item => item.temp),
                 type: 'line',
                 smooth: true
             }
@@ -71,17 +109,43 @@ function onMessage(event)
     // document.getElementById('timer').innerHTML = getTimerTime(data.startTimer, data.endTimer);
 }
 
+/**
+ * Left pads an array with a specified pad object until it reaches 150 elements.
+ * If the array is longer than 150 elements, it returns the last 150 elements.
+ *
+ * @param {Array} arr - The array to be padded.
+ * @param {Object} padObj - The object to use for padding.
+ * @param {number} [targetLength=150] - The desired array length.
+ * @returns {Array} - The padded (or trimmed) array.
+ */
+function leftPadArray(arr, padObj, targetLength = 150)
+{
+    if (!Array.isArray(arr))
+        throw new TypeError("The first argument must be an array.");
+
+    if (arr.length >= targetLength)
+        return arr.slice(-targetLength);
+
+    const padCount = targetLength - arr.length;
+    const padArray = Array.from({ length: padCount }, () => ({ ...padObj }));
+    return padArray.concat(arr);
+}
 
 document.addEventListener("DOMContentLoaded", function()
 {
-    // window.setInterval(update, 1000);
-
     var data = [];
     var chartDom = document.getElementById('main');
     myChart = echarts.init(chartDom, 'dark', { // 'dark'
         renderer: 'canvas',
         useDirtyRect: false
     });
+
+    data = enrichData(leftPadArray(data, {
+        temp: 15,
+        setpoint: 15,
+        timestamp: 0,
+    }, 150));
+
     var option = {
         tooltip: {
             trigger: 'axis',
@@ -93,14 +157,14 @@ document.addEventListener("DOMContentLoaded", function()
             }
         },
         grid: {
-            left: "5%",
-            top: 30,
-            right: "5%",
-            bottom: 30
+            left: 20,
+            top: 25,
+            right: 20,
+            bottom: 25,
             // left: '3%',
             // right: '4%',
             // bottom: '3%',
-            // containLabel: true
+            containLabel: true
         },
         xAxis: {
             type: 'category',
@@ -108,9 +172,15 @@ document.addEventListener("DOMContentLoaded", function()
         },
         yAxis: {
             type: 'value',
-            max: 250
+            max: 250,
+            axisLabel: {
+                formatter: '{value} °C'
+            },
+            axisLine: {
+                show: true,
+            },
         },
-        series: [  
+        series: [
             {
                 name: 'dataSetpoint',
                 data: data,
@@ -118,7 +188,7 @@ document.addEventListener("DOMContentLoaded", function()
                 smooth: true,
                 showSymbol: false,
                 areaStyle: {}
-            },        
+            },
             {
                 name: 'dataInput',
                 data: data,
@@ -142,44 +212,14 @@ function onLoad(event)
     initWebSocket();
 }
 
-// function initButton()
-// {
-//     document.getElementById('update').addEventListener('click', update);
-// }
-
-function update()
+function sendMessage(msg)
 {
-    websocket.send('update');
+    websocket.send(JSON.stringify(msg));
 }
 
-// function getReadings(){
-//     websocket.send("getReadings");
-// }
-
-// function updateCountdown()
-// {
-//     var x = setInterval(function() {
-        
-//     var distance = nextBatteryReadTime - new Date().getTime();
-
-//     var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-//     var seconds = Math.floor((distance % (1000 * 60)) / 1000);
-        
-//     document.getElementById("countdown").innerHTML = "  (" + minutes + "m " + seconds + "s)";
-
-//     if (distance < 0) {
-//         clearInterval(x);
-//         document.getElementById("countdown").innerHTML = " ( time is up)";
-//     }
-        
-//     }, 1000);
-// }
-
-// function getTimerTime(startTime, endTime) {
-//     if(startTime >= endTime || !endTime)
-//         return lastTime + " s";
-
-//     lastTime = ((endTime - startTime) / 1000);
-    
-//     return lastTime + " s"; 
-// }
+function getConfig()
+{
+    sendMessage({
+        cmd: "getCfg"
+    });
+}

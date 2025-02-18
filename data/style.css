@@ -6,10 +6,25 @@ body {
 }
 
 hr {
-    border-width: 0.2rem;
+    border-width: 0.1rem;
     border-color: #143642;
-    margin: 0 auto;
     opacity: 1;
+}
+
+input[type='color'], input[type='date'], input[type='datetime'], input[type='datetime-local'], input[type='email'], input[type='month'], input[type='number'], input[type='password'], input[type='search'], input[type='tel'], input[type='text'], input[type='url'], input[type='week'], input:not([type]), textarea, select {
+    border-color: #2c3544;
+}
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
 }
 
 .live-dot {
@@ -30,36 +45,127 @@ hr {
     color: rgba(255, 255, 255, 0.75);
 }
 
-.text-c-muted {
-    color: rgba(var(--bs-body-color-rgb),.40)!important;
-}
-
 .content-wrapper {
-    background-color: #b5cadd;
     display: flex;
     flex-direction: column;
     max-width: 90%;
     margin: 0 auto;
     border-radius: .725rem;
-    padding: 1rem;
+    overflow: hidden;
 }
 
 .header {
+    display: flex;
+    align-items: center;
+    /* padding: 1rem 1rem 0 1rem; */
+    background-color: #3e4c58;
+}
 
+.header h3 {
+    display: inline-block;
+    margin-bottom: 0;
+    color: #fff;
+}
+
+.brand-logo {
+    display: flex;
+    background-color: #fff;
+    text-align: center;
+    padding: 1.5rem;
+    margin-right: 2rem;
 }
 
 .body {
     display: flex;
+    background-color: #b5cadd;
 }
+
+/* .info {
+    display: flex;
+    justify-content: space-evenly;
+}
+
+.info > * + * {
+    border-left: 1px #000 solid;
+}
+
+.info > * {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+} */
 
 .actions {
     display: flex;
     flex-direction: column;
-    padding: 1rem;
+    padding: 3rem 1rem 1rem 1rem;
+}
+
+.profiles {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: auto;
+}
+
+.pidControl.container {
+    padding: 0 1rem;
+}
+
+.pidControl input {
+    margin: 0;
+}
+
+.pidControl .row {
+    margin-bottom: .5rem;
+}
+
+.pidControl .row .column {
+    padding: 0 .2rem;
+}
+
+.pidControl .row:first-child .column {
+    justify-content: center;
+}
+
+.pidControl .row .column {
+    display: flex;
 }
 
 .content {
     padding: 1rem;
     width: 100%;
+}
+
+.info .row .column {
+    display: flex;
+    justify-content: center;
+}
+
+.chart-wrapper {
     height: 600px;
+    overflow: hidden;
+    border-radius: 1rem;
+}
+
+.bold {
+    font-weight: 600;
+}
+
+.small {
+    font-size: .875em;
+}
+
+footer {
+    text-align: center;
+    position: absolute;
+    left: 0;
+    bottom: 1rem;
+    width: 100%;
+    font-size: .8em;
+}
+
+footer > * {
+    margin-bottom: 0;
 }
