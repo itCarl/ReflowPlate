@@ -2,9 +2,6 @@
 #ifndef ReflowPlate_h
 #define ReflowPlate_h
 
-// version code
-#define VERSION 2502150
-
 #include <WiFi.h>
 // #include <DNSServer.h>
 #include <WiFiClient.h>
@@ -34,6 +31,18 @@
 #include "profiles/LowTempProfile.h"
 #include "profiles/HighTempProfile.h"
 #include "profiles/Test01Profile.h"
+
+#ifndef VERSION_CODE
+    #define VERSION_CODE "unkown"
+#endif
+
+#ifndef VERSION
+    #define VERSION "err"
+#endif
+
+#ifndef BUILD_TIME
+    #define BUILD_TIME "unkown"
+#endif
 
 #ifndef CLIENT_SSID
     #define CLIENT_SSID "none"

@@ -5,7 +5,9 @@ var start;
 var myChart;
 var cfg = {
     profiles: [{}],
-    idleSafetyTemperature
+    idleSafetyTemperature: 0.0,
+    version: "1.0.0",
+    buildTime: "unkown",
 };
 
 window.addEventListener('load', onLoad);
@@ -60,49 +62,61 @@ function onMessage(event)
     // console.log(event);
     // console.log(data.temp);
 
-    // process Metadata
-    let metaData = data.meta;
-    document.getElementById('inP').placeholder = metaData.kp;
-    document.getElementById('inI').placeholder = metaData.ki;
-    document.getElementById('inD').placeholder = metaData.kd;
+    if(data.cfg) {
+        // process static config
+        let dcfg = data.cfg;
+        cfg.version = dcfg.version;
+        cfg.buildTime = dcfg.buildTime;
+        document.getElementById('version').innerHTML = cfg.version;
+        document.getElementById('buildTime').innerHTML = cfg.buildTime;
+    }
 
-    // process Temperature data
-    let tempData = enrichData(leftPadArray(data.temp, {
-        temp: null,
-        setpoint: null,
-        timestamp: 0,
-    }, 150));
+    if(data.meta) {
+        // process Metadata
+        let metaData = data.meta;
+        document.getElementById('inP').placeholder = metaData.kp;
+        document.getElementById('inI').placeholder = metaData.ki;
+        document.getElementById('inD').placeholder = metaData.kd;
+    }
 
-    // console.log(tempData);
+    if(data.temp) {
+        // process Temperature data
+        let tempData = enrichData(leftPadArray(data.temp, {
+            temp: null,
+            setpoint: null,
+            timestamp: 0,
+        }, 150));
 
-    const mostRecentData = tempData[tempData.length - 1];
-    document.getElementById('currentTemp').innerHTML = mostRecentData.temp;
-    document.getElementById('setpointTemp').innerHTML = mostRecentData.setpoint;
-    document.getElementById('pwr').innerHTML = mostRecentData.pwr;
+        // console.log(tempData);
 
-    myChart.setOption({
-        xAxis: {
-            // data: Array.from({ length: tempData.length }, (_, i) => i)
-            // data: tempData.map(item => item.timestamp)
-            data: tempData.map(item => item.time)
-        },
-        series: [
-            {
-                name: 'dataSetpoint',
-                data: tempData.map(item => item.setpoint),
-                type: 'line',
-                smooth: true,
-                areaStyle: {}
+        const mostRecentData = tempData[tempData.length - 1];
+        document.getElementById('currentTemp').innerHTML = mostRecentData.temp;
+        document.getElementById('setpointTemp').innerHTML = mostRecentData.setpoint;
+        document.getElementById('pwr').innerHTML = mostRecentData.pwr;
+
+        myChart.setOption({
+            xAxis: {
+                // data: Array.from({ length: tempData.length }, (_, i) => i)
+                // data: tempData.map(item => item.timestamp)
+                data: tempData.map(item => item.time)
             },
-            {
-                name: 'dataInput',
-                data: tempData.map(item => item.temp),
-                type: 'line',
-                smooth: true
-            }
-        ]
-    });
-
+            series: [
+                {
+                    name: 'dataSetpoint',
+                    data: tempData.map(item => item.setpoint),
+                    type: 'line',
+                    smooth: true,
+                    areaStyle: {}
+                },
+                {
+                    name: 'dataInput',
+                    data: tempData.map(item => item.temp),
+                    type: 'line',
+                    smooth: true
+                }
+            ]
+        });
+    }
     // document.getElementById('battery_voltage').innerHTML = battery_voltage;
     // document.getElementById('battery_level').innerHTML = battery_percent;
     // document.getElementById('airflow').innerHTML = airflow;
@@ -134,7 +148,8 @@ function leftPadArray(arr, padObj, targetLength = 150)
 document.addEventListener("DOMContentLoaded", function()
 {
     var data = [];
-    var chartDom = document.getElementById('main');
+    var chartDom = document.getElementById('mainChart');
+
     myChart = echarts.init(chartDom, 'dark', { // 'dark'
         renderer: 'canvas',
         useDirtyRect: false
@@ -204,6 +219,8 @@ document.addEventListener("DOMContentLoaded", function()
     }
     // option && myChart.setOption(option);
 
+    document.getElementById('chartSkeleton').classList.add('loaded');
+    document.getElementById('mainChart').style.display = 'block';
     window.addEventListener('resize', myChart.resize);
 });
 

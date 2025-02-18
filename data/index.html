@@ -37,21 +37,28 @@
                         <button>Profile03</button>
                     </div>
                     <hr/>
+                    <button style="margin-bottom: 2rem;">Update</button>
                     <div class="container pidControl">
                         <div class="row">
-                            <div class="column"><label for="nameField">P</label></div>
-                            <div class="column"><label for="nameField">I</label></div>
-                            <div class="column"><label for="nameField">D</label></div>
+                            <div class="column">
+                                <label for="nameField">P</label>
+                            </div>
+                            <div class="column">
+                                <label for="nameField">I</label>
+                            </div>
+                            <div class="column">
+                                <label for="nameField">D</label>
+                            </div>
                         </div>
                         <div class="row">
                             <div class="column">
-                                <input type="number" id="inP" placeholder="">
+                                <input type="number" id="inP" placeholder="0.00">
                             </div>
                             <div class="column">
-                                <input type="number" id="inI" placeholder="">
+                                <input type="number" id="inI" placeholder="0.00">
                             </div>
                             <div class="column">
-                                <input type="number" id="inD" placeholder="">
+                                <input type="number" id="inD" placeholder="0.00">
                             </div>
                         </div>
                     </div>
@@ -71,7 +78,8 @@
                         </div>
                     </div>
                     <div class="chart-wrapper">
-                        <div id="main" style="height: 100%;"></div>
+                        <div id="chartSkeleton" class="skeleton"></div>
+                        <div id="mainChart" style="height: 100%;"></div>
                     </div>
                 </div>
             </div>
@@ -82,7 +90,7 @@
                 <span class="bold">ReflowPlate management software</span> <span class="small">by Maximilian Mewes</span>
             </p>
             <p>
-                Version v1.0.0 | Build: 2025-02-16 20:58 |
+                Version v<span id="version">1.0.0</span> | Build: <span id="buildTime">2025-02-16 20:58</span> |
             </p>
         </footer>
 

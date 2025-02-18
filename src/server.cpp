@@ -64,6 +64,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
         DEBUG_PRINTLN("[WS] Message incoming.");
 
         JsonDocument doc;
+        String out;
         DeserializationError error = deserializeJson(doc, data);
 
         if (error) {
@@ -78,9 +79,17 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
         if (strcmp(cmd, "upt") == 0) {
             notify();
             DEBUG_PRINTLN("Update command received.");
+        } else if (strcmp(cmd, "getCfg") == 0) {
+            JsonObject cfg = doc["cfg"].to<JsonObject>();
+            cfg["version"] = VERSION;
+            // cfg["buildTime"] = __DATE__ __TIME__;
+            cfg["buildTime"] = BUILD_TIME;
         } else if (strcmp(cmd, "profiles") == 0) {
 
         }
+
+        serializeJson(doc, out);
+        ws.textAll(out);
     }
     // if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
     //     data[len] = 0;
