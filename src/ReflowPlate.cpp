@@ -4,7 +4,7 @@
 
 ReflowPlate::ReflowPlate()
 {
-
+    //
 }
 
 void ReflowPlate::setup()
@@ -30,12 +30,7 @@ void ReflowPlate::setup()
         ESP32_ANALOG_RESOLUTION
     );
 
-    if(!LittleFS.begin(true)){
-        DEBUG_PRINTLN("LittleFS Mount Failed");
-        return;
-    } else{
-        DEBUG_PRINTLN("Little FS Mounted Successfully");
-    }
+    initStorage();
 
     Input = therm1->readCelsius();
     Setpoint = Input-5;
@@ -79,241 +74,191 @@ void ReflowPlate::setup()
 void ReflowPlate::loop()
 {
 
-    #ifdef PID_AUTOTUNE
+#ifdef PID_AUTOTUNE
     Input = therm1->readCelsius();
     // tuner.performRelayTest(Input);
     if(!PIDTuningComplete) {
-      // if(!tuner.isTuningComplete()) {
-      //   digitalWrite(RELAY, tuner.getOutput() > 0 ? HIGH : LOW);
-      if (!tuner.isFinished()) {
-        if((millis() - lastTempControl) > tempControlInterval) {
-          lastTempControl = millis();
-          double output = tuner.tunePID(Input);
-          digitalWrite(RELAY, (output > (WindowSize / 2)) ? HIGH : LOW);
-        }
-      // if (tuner.getTu() <= 0 && tuner.getKu() <= 0) {
-      //   float controlSignal = tuner.update(Input);
-      //   digitalWrite(RELAY, (controlSignal > (WindowSize / 2)) ? HIGH : LOW);
-      } else {
-        // Get tuned values
-        Kp = tuner.getKp();
-        Ki = tuner.getKi();
-        Kd = tuner.getKd();
-        // tuner.calculatePIDParams(Kp, Ki, Kd);
+        // if(!tuner.isTuningComplete()) {
+        //   digitalWrite(RELAY, tuner.getOutput() > 0 ? HIGH : LOW);
+        if (!tuner.isFinished()) {
+            if((millis() - lastTempControl) > tempControlInterval) {
+                lastTempControl = millis();
+                double output = tuner.tunePID(Input);
+                digitalWrite(RELAY, (output > (WindowSize / 2)) ? HIGH : LOW);
+            }
+            // if (tuner.getTu() <= 0 && tuner.getKu() <= 0) {
+            //   float controlSignal = tuner.update(Input);
+            //   digitalWrite(RELAY, (controlSignal > (WindowSize / 2)) ? HIGH : LOW);
+        } else {
+            // Get tuned values
+            Kp = tuner.getKp();
+            Ki = tuner.getKi();
+            Kd = tuner.getKd();
+            // tuner.calculatePIDParams(Kp, Ki, Kd);
 
-        clearFirstRow();
-        LCD.home();
-        LCD.print("Tuning Complete");
+            clearFirstRow();
+            LCD.home();
+            LCD.print("Tuning Complete");
+            clearSecondRow();
+            LCD.setCursor(0, 1);
+            LCD.printf("%.2f|%.2f|%.2f", Kp, Ki, Kd);
+
+            Serial.println("Tuning Complete!");
+            Serial.print("Kp: "); Serial.println(Kp);
+            Serial.print("Ki: "); Serial.println(Ki);
+            Serial.print("Kd: "); Serial.println(Kd);
+
+            PIDTuningComplete = true;
+            digitalWrite(RELAY, LOW);
+            delay(30*1000); //30sec
+            LCD.clear();
+            showTemperatures(Input, mode == 1 ? IDLE_SAFETY_TEMPERATURE : readPoti());
+            LCD.home();
+            LCD.print(selectedProfile->getDisplayName());
+        }
+        if (millis() < nextUpdateTime || PIDTuningComplete) return;
+        nextUpdateTime = millis() + updateInterval;
+        lastUpdateTime = millis();
+        showTemperature(POS_SET_TEMPERATURE, Input);
+        LCD.print((char)223);
+        LCD.print("C");
+
+        LCD.setCursor(13 + (Input < 10) + (Input < 100), 0);
+        LCD.print(Input);
         clearSecondRow();
         LCD.setCursor(0, 1);
         LCD.printf("%.2f|%.2f|%.2f", Kp, Ki, Kd);
 
-        Serial.println("Tuning Complete!");
-        Serial.print("Kp: "); Serial.println(Kp);
-        Serial.print("Ki: "); Serial.println(Ki);
-        Serial.print("Kd: "); Serial.println(Kd);
-
-        PIDTuningComplete = true;
-        digitalWrite(RELAY, LOW);
-        delay(30*1000); //30sec
-        LCD.clear();
-        showTemperatures(Input, mode == 1 ? IDLE_SAFETY_TEMPERATURE : readPoti());
-        LCD.home();
-        LCD.print(selectedProfile->getDisplayName());
-      }
-      if (millis() < nextUpdateTime || PIDTuningComplete) return;
-      nextUpdateTime = millis() + updateInterval;
-      lastUpdateTime = millis();
-      showTemperature(POS_SET_TEMPERATURE, Input);
-      LCD.print((char)223);
-      LCD.print("C");
-
-      LCD.setCursor(13 + (Input < 10) + (Input < 100), 0);
-      LCD.print(Input);
-      clearSecondRow();
-      LCD.setCursor(0, 1);
-      LCD.printf("%.2f|%.2f|%.2f", Kp, Ki, Kd);
-
-      return;
+        return;
     }
-  #endif
+#endif
 
     ElegantOTA.loop();
-    // dnsServer.processNextRequest();
-
 
     if(millis() - lastTempControl > tempControlInterval)
     {
-      lastTempControl = millis();
-      Input = therm1->readCelsius();
-      filteredTemperature = alpha * Input + (1 - alpha) * filteredTemperature;
-      Input = filteredTemperature;
-  #ifdef USE_PID
+        lastTempControl = millis();
+        Input = therm1->readCelsius();
+        filteredTemperature = alpha * Input + (1 - alpha) * filteredTemperature;
+        Input = filteredTemperature;
+        Output = computePID(Setpoint, Input, Kp, Ki, Kd);
+        if (Output < 0 || Output > WindowSize) {
+            // DEBUG_PRINTF("PID Output out of range: %f\n", Output);
+            Output = constrain(Output, 0, WindowSize);
+        }
+        PLOT_PRINTF("%.2f,%.2f,%d,%.2f\n", Setpoint, Input, (uint8_t)((Output * 100) / WindowSize), (double)(millis() / 1000.0));
 
-      Output = computePID(Setpoint, Input, Kp, Ki, Kd);
-      if (Output < 0 || Output > WindowSize) {
-        // DEBUG_PRINTF("PID Output out of range: %f\n", Output);
-        Output = constrain(Output, 0, WindowSize);
-      }
-  #endif
-      PLOT_PRINTF("%.2f,%.2f,%d,%.2f\n", Setpoint, Input, (uint8_t)((Output * 100) / WindowSize), (double)(millis() / 1000.0));
-  #ifndef USE_PID
-      if(Input < Setpoint && (mode != 1 && Setpoint >= IDLE_SAFETY_TEMPERATURE)) {
-        if(!relayActive) {
-          relayActive = true;
-          digitalWrite(RELAY, HIGH);
-          LCD.setCursor(0, 1);
-          LCD.print("1");
-        }
-      } else {
-        if(relayActive) {
-          relayActive = false;
-          digitalWrite(RELAY, LOW);
-          LCD.setCursor(0, 1);
-          LCD.print("0");
-        }
-      }
-  #endif
     }
 
     if(millis() - lastControlTime > controlInterval)
     {
-      rawPotiValue = readPoti();
+        rawPotiValue = readPoti();
 
-      // Apply hysteresis
-      if (abs(potiValue - rawPotiValue) > 4) {
-          potiValue = roundToNearestFive(rawPotiValue);
-      } else {
-          rawPotiValue = potiValue;
-      }
+        // Apply hysteresis
+        if (abs(potiValue - rawPotiValue) > 4) {
+            potiValue = roundToNearestFive(rawPotiValue);
+        } else {
+            rawPotiValue = potiValue;
+        }
 
-      if(potiValue != oldPotiValue && (mode == 1 || mode == 3)) {
-        oldPotiValue = potiValue;
-        Setpoint = potiValue;
-        showTemperatures(oldCurrentTemp, Setpoint);
-        mode = 3;
-        mode3StartTime = millis();
-      }
+        if(potiValue != oldPotiValue && (mode == 1 || mode == 3)) {
+            oldPotiValue = potiValue;
+            Setpoint = potiValue;
+            showTemperatures(oldCurrentTemp, Setpoint);
+            mode = 3;
+            mode3StartTime = millis();
+        }
 
-      if(!digitalRead(BTN_PREV) && btnPrevPressed && mode != 2) {
-        btnPrevPressed = false;
-        mode = 1;
-        Setpoint = IDLE_SAFETY_TEMPERATURE;
-        clearFirstRow();
-        LCD.home();
-        LCD.print(getPreviousProfile()->getDisplayName());
-      } else if(digitalRead(BTN_PREV) && !btnPrevPressed && mode != 2) {
-        btnPrevPressed = true;
-      }
+        if(!digitalRead(BTN_PREV) && btnPrevPressed && mode != 2) {
+            btnPrevPressed = false;
+            if(mode != 3) showPreviousProfile();
+            mode = 1;
+            Setpoint = IDLE_SAFETY_TEMPERATURE;
+        } else if(digitalRead(BTN_PREV) && !btnPrevPressed && mode != 2) {
+            btnPrevPressed = true;
+        }
 
-      if(!digitalRead(BTN_NEXT) && btnNextPressed && mode != 2) {
-        btnNextPressed = false;
-        mode = 1;
-        Setpoint = IDLE_SAFETY_TEMPERATURE;
-        clearFirstRow();
-        LCD.home();
-        LCD.print(getNextProfile()->getDisplayName());
-      } else if(digitalRead(BTN_NEXT) && !btnNextPressed && mode != 2) {
-        btnNextPressed = true;
-      }
+        if(!digitalRead(BTN_NEXT) && btnNextPressed && mode != 2) {
+            btnNextPressed = false;
+            if(mode != 3) showNextProfile();
+            mode = 1;
+            Setpoint = IDLE_SAFETY_TEMPERATURE;
+        } else if(digitalRead(BTN_NEXT) && !btnNextPressed && mode != 2) {
+            btnNextPressed = true;
+        }
 
-      if(!digitalRead(BTN_CONFIRM) && btnConfirmPressed) {
-        btnConfirmPressed = false;
-        if(mode == 1) {
-          mode = 2;
-          clearFirstRow();
-          LCD.home();
-          LCD.print("CONFIRMED!");
-          delay(1000);
-          selectedProfile->startReflow();
+        if(!digitalRead(BTN_CONFIRM) && btnConfirmPressed) {
+            btnConfirmPressed = false;
+            if(mode == 1) {
+                mode = 2;
+                showMessage("Confirmed!");
+                selectedProfile->startReflow();
+            } else if(mode == 2) {
+                mode = 1;
+                showMessage("Aborted!");
+                showSelectedProfile();
+            }
+        } else if(digitalRead(BTN_CONFIRM) && !btnConfirmPressed) {
+            btnConfirmPressed = true;
+        }
+
+        if(mode == 0 || mode == 1) {
+            Setpoint = IDLE_SAFETY_TEMPERATURE;
         } else if(mode == 2) {
-          mode = 1;
-          clearFirstRow();
-          LCD.home();
-          LCD.print("Aborted!");
-          delay(1000);
-          LCD.home();
-          LCD.print(selectedProfile->getDisplayName());
+            Setpoint = selectedProfile->getDesiredTemp();
+        } else if(mode == 3) {
+            mode3ElapsedTime = millis() - mode3StartTime;
+            if(mode3ElapsedTime >= MAX_POTI_TIME) {
+                mode = 1;
+                showSelectedProfile();
+            }
         }
-      } else if(digitalRead(BTN_CONFIRM) && !btnConfirmPressed) {
-        btnConfirmPressed = true;
-      }
 
-      if(mode == 0 || mode == 1) {
-        Setpoint = IDLE_SAFETY_TEMPERATURE;
-      } else if(mode == 2) {
-        Setpoint = selectedProfile->getDesiredTemp();
-      } else if(mode == 3) {
-        mode3ElapsedTime = millis() - mode3StartTime;
-        if(mode3ElapsedTime >= MAX_POTI_TIME) {
-          mode = 1;
-          clearFirstRow();
-          LCD.home();
-          LCD.print(selectedProfile->getDisplayName());
+        if(mode == 2 && selectedProfile->isReflowComplete()) {
+            mode = 1;
+            clearFirstRow();
+            LCD.home();
+            LCD.print(selectedProfile->getDisplayName());
         }
-      }
 
-      if(mode == 2 && selectedProfile->isReflowComplete()) {
-        mode = 1;
-        clearFirstRow();
-        LCD.home();
-        LCD.print(selectedProfile->getDisplayName());
-      }
-
-      lastControlTime = millis();
+        lastControlTime = millis();
     }
 
-
-  #ifdef USE_PID
-    if (millis() - windowStartTime > WindowSize)
-    { //time to shift the Relay Window
-      windowStartTime += WindowSize;
+    if (millis() - windowStartTime > WindowSize) {
+        windowStartTime += WindowSize;
     }
 
     unsigned long onTime = Output;
     if ((Output > (millis() - windowStartTime)) && (mode != 1 && Setpoint >= IDLE_SAFETY_TEMPERATURE)) {
-      if(!relayActive) {
-        relayActive = true;
-        digitalWrite(RELAY, HIGH);
-        // PLOT_PRINTF("Time in Window: %lums\n", (millis() - windowStartTime));
-        // PLOT_PRINTF("On Time Remaining: %lums\n", ((unsigned long)Output - (millis() - windowStartTime)));
-        // PLOT_PRINTLN(String(1) + "," + String(millis()) + "," + String(Output) + "," + String(millis() - windowStartTime) + "," + String(Setpoint));
-        // LCD.setCursor(0, 1);
-        // LCD.print("1");
-        // LCD.printf("%3d%%", (uint8_t)((Output * 100) / WindowSize));
-      }
+        if(!relayActive) {
+            relayActive = true;
+            digitalWrite(RELAY, HIGH);
+            // PLOT_PRINTF("Time in Window: %lums\n", (millis() - windowStartTime));
+            // PLOT_PRINTF("On Time Remaining: %lums\n", ((unsigned long)Output - (millis() - windowStartTime)));
+            // PLOT_PRINTLN(String(1) + "," + String(millis()) + "," + String(Output) + "," + String(millis() - windowStartTime) + "," + String(Setpoint));
+        }
     } else {
-      if(relayActive) {
-        relayActive = false;
-        digitalWrite(RELAY, LOW);
-        // PLOT_PRINTF("Time in Window: %lums\n", (millis() - windowStartTime));
-        // PLOT_PRINTF("Off Time Remaining: %lums\n\n", (WindowSize - onTime) - ((millis() - windowStartTime) - onTime));
-        // PLOT_PRINTLN(String(0) + "," + String(PLOT_PRINTFmillis()) + "," + String(Output) + "," + String(millis() - windowStartTime) + "," + String(Setpoint));
-        // LCD.setCursor(0, 1);
-        // LCD.print("0");
-        // LCD.printf("%3d%%", 0);
-      }
+        if(relayActive) {
+            relayActive = false;
+            digitalWrite(RELAY, LOW);
+            // PLOT_PRINTF("Time in Window: %lums\n", (millis() - windowStartTime));
+            // PLOT_PRINTF("Off Time Remaining: %lums\n\n", (WindowSize - onTime) - ((millis() - windowStartTime) - onTime));
+            // PLOT_PRINTLN(String(0) + "," + String(PLOT_PRINTFmillis()) + "," + String(Output) + "," + String(millis() - windowStartTime) + "," + String(Setpoint));
+        }
     }
-  #endif
 
     if (millis() < nextUpdateTime) return;
     nextUpdateTime = millis() + updateInterval;
     lastUpdateTime = millis();
-    // LCD.clear(); looks ugly
+    // LCD.clear(); looks ugly only update the chars that actualy need to be updated
 
     LCD.home();
-    // LCD.write(0);
-    // LCD.write(1);
-    // LCD.write(2);
-    // LCD.write(3);
-    // LCD.write(6);
-    // LCD.write(7);
     if(mode == 1){
 
     } else if(mode == 2) {
-      printSpaceBetween(selectedProfile->showProfileState(), String(selectedProfile->getTimeLeft()) + "s");
+        printSpaceBetween(selectedProfile->showProfileState(), String(selectedProfile->getTimeLeft()) + "s");
     } else if(mode == 3) {
-      printSpaceBetween("PotiControl", String(mode3ElapsedTime / 1000) + "s");
+        printSpaceBetween("PotiControl", String(mode3ElapsedTime / 1000) + "s");
     }
 
     showTemperatures(Input <= 5 ? therm1->readCelsius() : Input, Setpoint);
@@ -330,19 +275,9 @@ void ReflowPlate::loop()
     notify();
 
     DEBUG_PRINTLN("--DEBUG--");
-  #ifdef USE_PID
     DEBUG_PRINTLN(Output);
     DEBUG_PRINTLN(millis() - windowStartTime);
-    if(relayActive) {
-      DEBUG_PRINTF("Relay: %3d%%\n", (uint8_t)((Output * 100) / WindowSize));
-      LCD.setCursor(0, 1);
-      LCD.printf("%3d%%", (uint8_t)((Output * 100) / WindowSize));
-    } else {
-      DEBUG_PRINTF("Relay: %3d%%\n", 0);
-      LCD.setCursor(0, 1);
-      LCD.printf("%3d%%", 0);
-    }
-  #endif
+    showOutputPower();
     DEBUG_PRINTF("Mode: %d\n", mode);
     DEBUG_PRINTF("Relay State: %s\n", relayActive ? "On" : "Off");
     DEBUG_PRINTF("Free Heap: %d\n", ESP.getFreeHeap());
@@ -378,23 +313,6 @@ void ReflowPlate::initPins()
     digitalWrite(LED_BUILTIN, HIGH);
     delay(500);
     digitalWrite(DEBUG_LED, LOW);
-}
-
-void ReflowPlate::initLCD()
-{
-    LCD.init();
-    LCD.backlight();
-
-    // load custom characters
-    LCD.createChar(0, arrowUp);
-    LCD.createChar(1, arrowDown);
-    LCD.createChar(2, coolDown);
-    LCD.createChar(3, hot);
-    LCD.createChar(6, hotPlateLeft);
-    LCD.createChar(7, hotPlateRight);
-
-    LCD.home();
-    LCD.print("Initializing");
 }
 
 void ReflowPlate::initConnection()
@@ -461,5 +379,5 @@ void ReflowPlate::initConnection()
 
 void ReflowPlate::initAP()
 {
-
+    //
 }

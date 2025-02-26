@@ -3,22 +3,23 @@
 
 #include <Arduino.h>
 
-enum State { 
-    IDLE, 
-    PREHEAT, 
-    SOAK, 
-    REFLOW, 
-    COOL, 
-    COMPLETE 
+enum State {
+    IDLE,
+    PREHEAT,
+    SOAK,
+    REFLOW,
+    COOL,
+    COMPLETE
 };
 
 class BaseProfile
-{    
+{
     private:
 
     protected:
         String displayName;
         uint16_t maxTemp = 0;
+        unsigned long totalTime = 0;
         State state = State::IDLE;
 
         unsigned long startTime = 0;
@@ -101,10 +102,27 @@ class BaseProfile
             }
         }
 
+        void serialize(JsonObject& obj) const
+        {
+            obj["name"] = this->getDisplayName();
+            obj["maxTemp"] = this->getMaxTemp();
+            obj["totalTime"] = this->getTotalTime();
+
+            obj["preheatTemp"] = this->preheatTemp;
+            obj["soakTemp"] = this->soakTemp;
+            obj["reflowTemp"] = this->reflowTemp;
+            obj["coolTemp"] = this->coolTemp;
+
+            obj["preheatTime"] = this->preheatTime;
+            obj["soakTime"] = this->soakTime;
+            obj["reflowTime"] = this->reflowTime;
+            obj["coolTime"] = this->coolTime;
+        }
+
         /*
          *      GETTER & SETTER
          */
-        virtual String getDisplayName()
+        virtual String getDisplayName() const
         {
             return this->displayName;
         }
@@ -114,9 +132,24 @@ class BaseProfile
             this->displayName = displayName;
         }
 
-        virtual uint16_t getMaxTemp()
+        virtual uint16_t getMaxTemp() const
         {
-            return this->maxTemp;
+            return this->maxTemp > 0 ? this->maxTemp : max(this->preheatTemp, max(this->soakTemp, max(this->reflowTemp, this->coolTemp)));
+        }
+
+        virtual void setMaxTemp(uint16_t temp)
+        {
+            this->maxTemp = temp;
+        }
+
+        virtual unsigned long getTotalTime() const
+        {
+            return this->totalTime > 0 ? this->totalTime : this->preheatTemp + this->soakTime + this->reflowTime + this->coolTime;
+        }
+
+        virtual void setTotalTime(unsigned long totalTime)
+        {
+            this->totalTime = totalTime;
         }
 };
 

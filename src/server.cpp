@@ -48,6 +48,7 @@ void notify()
     meta["kp"] = Kp;
     meta["ki"] = Ki;
     meta["kd"] = Kd;
+    meta["controlsLocked"] = controlsLocked;
 
     JsonArray temp = doc["temp"].to<JsonArray>();
     temperatureData.serializeToJson(temp);
@@ -60,12 +61,13 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
 {
     AwsFrameInfo *info = (AwsFrameInfo*)arg;
     if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
-        data[len] = '\0';  // Null-Terminierung für String-Handling
+        data[len] = '\0';
         DEBUG_PRINTLN("[WS] Message incoming.");
 
         JsonDocument doc;
         String out;
         DeserializationError error = deserializeJson(doc, data);
+        bool sendResponse = false;
 
         if (error) {
             DEBUG_PRINT("[WS] json parsing error: ");
@@ -77,27 +79,44 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
         const char* cmd = doc["cmd"];
 
         if (strcmp(cmd, "upt") == 0) {
-            notify();
-            DEBUG_PRINTLN("Update command received.");
+            DEBUG_PRINTLN("[WS] Update command received");
+            JsonObject receivedData = doc["states"];
+            controlsLocked = receivedData["controlsLocked"] | false;
+            Kp = receivedData["kp"] | Kp;
+            Ki = receivedData["ki"] | Ki;
+            Kd = receivedData["kd"] | Kd;
+            savePID();
+            sendResponse = true; // necessary for fast UI updates
+
         } else if (strcmp(cmd, "getCfg") == 0) {
+            DEBUG_PRINTLN("[WS] getConfig command received");
             JsonObject cfg = doc["cfg"].to<JsonObject>();
             cfg["version"] = VERSION;
-            // cfg["buildTime"] = __DATE__ __TIME__;
+            cfg["versionCode"] = VERSION_CODE;
             cfg["buildTime"] = BUILD_TIME;
-        } else if (strcmp(cmd, "profiles") == 0) {
 
+            JsonArray jProfiles = cfg.createNestedArray("profiles");
+            for (int i = 0; i < (sizeof(profiles)/sizeof(*profiles)); i++) {
+                JsonObject profile = jProfiles.add<JsonObject>();
+                profiles[i]->serialize(profile);
+            }
+
+        } else if (strcmp(cmd, "start") == 0) {
+            ReflowPlate::instance().reset();
+
+        }  else if (strcmp(cmd, "stop") == 0) {
+            ReflowPlate::instance().reset();
+
+        } else if (strcmp(cmd, "rstCntlr") == 0) {
+            ReflowPlate::instance().reset();
         }
+
+        if(!sendResponse)
+            return;
 
         serializeJson(doc, out);
         ws.textAll(out);
     }
-    // if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
-    //     data[len] = 0;
-    //     if (strcmp((char*)data, "update") == 0) {
-    //         notify();
-    //         DEBUG_PRINTLN("WS message received.");
-    //     }
-    // }
 }
 
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len)

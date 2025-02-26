@@ -9,6 +9,7 @@
 #include <ElegantOTA.h>
 #include <ArduinoJson.h>
 #include <LittleFS.h>
+#include <Preferences.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <Thermistor.h>
@@ -77,6 +78,8 @@ RP_GLOBAL char apSSID[33] _INIT("ReflowPlate");
 RP_GLOBAL AsyncWebServer server _INIT_N(((80)));
 RP_GLOBAL AsyncWebSocket ws _INIT_N((("/ws")));
 
+RP_GLOBAL Preferences storage;
+
 RP_GLOBAL LiquidCrystal_I2C LCD _INIT_N(((0x27, 16, 2)));
 RP_GLOBAL Thermistor* therm1;
 #ifdef PID_AUTOTUNE
@@ -137,6 +140,8 @@ RP_GLOBAL BaseProfile* selectedProfile _INIT(profiles[selectedProfileIndex]);
  *  10 = settings menu
  */
 RP_GLOBAL uint8_t mode _INIT(1);
+
+RP_GLOBAL bool controlsLocked _INIT(false);
 
 RP_GLOBAL bool relayActive _INIT(false);
 RP_GLOBAL bool PIDTuningComplete _INIT(false);
@@ -230,7 +235,6 @@ class ReflowPlate
         void reset();
 
         void initPins();
-        void initLCD();
         void initConnection();
         void initAP();
 };

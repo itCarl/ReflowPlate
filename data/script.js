@@ -4,12 +4,16 @@ var websocket;
 var start;
 var myChart;
 var cfg = {
-    profiles: [{}],
-    idleSafetyTemperature: 0.0,
-    version: "1.0.0",
-    buildTime: "unkown",
+    states: {
+        kp: 0,
+        ki: 0,
+        kd: 0
+        // all possible element states will be saved here
+    }
+    // will be filled on connection
 };
-
+var s = t => t/1000;
+var isEmpty = str => !str?.length;
 window.addEventListener('load', onLoad);
 
 function initWebSocket()
@@ -32,6 +36,13 @@ function onClose(event)
 {
     console.log('Connection closed');
     setTimeout(initWebSocket, 2000);
+    clearProfiles();
+}
+
+function clearProfiles()
+{
+    let profilesContainer = document.getElementById('profiles');
+    profilesContainer.replaceChildren();
 }
 
 function enrichData(data)
@@ -64,19 +75,42 @@ function onMessage(event)
 
     if(data.cfg) {
         // process static config
-        let dcfg = data.cfg;
-        cfg.version = dcfg.version;
-        cfg.buildTime = dcfg.buildTime;
+        let cfg = data.cfg;
+
         document.getElementById('version').innerHTML = cfg.version;
         document.getElementById('buildTime').innerHTML = cfg.buildTime;
+
+        let profilesContainer = document.getElementById('profiles');
+        cfg.profiles.forEach(e => {
+            let btn = document.createElement('button');
+            btn.innerHTML = e.name;
+            btn.title = `max. Temperature: ${e.maxTemp}°C\ntotal time: ${s(e.totalTime)}s\n--------------------\npreheat: ${s(e.preheatTime)}s@${e.preheatTemp}°C\nsoak: ${s(e.soakTime)}s@${e.soakTemp}°C\nreflow: ${s(e.reflowTime)}s@${e.reflowTemp}°C\ncooldown: ${s(e.coolTime)}s@${e.coolTemp}°C`;
+            profilesContainer.append(btn);
+        });
     }
 
     if(data.meta) {
         // process Metadata
         let metaData = data.meta;
-        document.getElementById('inP').placeholder = metaData.kp;
-        document.getElementById('inI').placeholder = metaData.ki;
-        document.getElementById('inD').placeholder = metaData.kd;
+        document.getElementById('inP').placeholder = cfg.states.kp = metaData.kp;
+        document.getElementById('inI').placeholder = cfg.states.ki = metaData.ki;
+        document.getElementById('inD').placeholder = cfg.states.kd = metaData.kd;
+        cfg.states.controlsLocked = metaData.controlsLocked;
+
+        const btnLock = document.getElementById('btnLock').firstChild;
+        var btnLockClass = btnLock.classList;
+        btnLockClass.remove('fa-spinner');
+        btnLockClass.remove('fa-pulse');
+        btnLockClass.remove('fa-fw');
+        if(cfg.states.controlsLocked) {
+            btnLockClass.remove('fa-lock-open');
+            btnLockClass.remove('unlocked');
+            btnLockClass.add('fa-lock', 'locked');
+        } else {
+            btnLockClass.remove('fa-lock');
+            btnLockClass.remove('locked');
+            btnLockClass.add('fa-lock-open', 'unlocked');
+        }
     }
 
     if(data.temp) {
@@ -221,6 +255,10 @@ document.addEventListener("DOMContentLoaded", function()
 
     document.getElementById('chartSkeleton').classList.add('loaded');
     document.getElementById('mainChart').style.display = 'block';
+    document.getElementById('btnLock').addEventListener('click', toggleLockBtn);
+    document.getElementById('btnRestart').addEventListener('click', restartController);
+    document.getElementById('btnUpdatePID').addEventListener('click', UpdatePIDBtn);
+
     window.addEventListener('resize', myChart.resize);
 });
 
@@ -234,9 +272,48 @@ function sendMessage(msg)
     websocket.send(JSON.stringify(msg));
 }
 
+function update()
+{
+    sendMessage({
+        cmd: "upt",
+        states: cfg.states
+    });
+}
+
 function getConfig()
 {
     sendMessage({
         cmd: "getCfg"
     });
+}
+
+function restartController()
+{
+    sendMessage({
+        cmd: "rstCntlr"
+    });
+}
+
+function toggleLockBtn(e)
+{
+    let el = e.currentTarget.firstChild;
+    el.classList.remove('fa-lock');
+    el.classList.remove('fa-lock-open');
+    el.classList.remove('unlocked');
+    el.classList.remove('locked');
+    el.classList.add('fa-spinner', 'fa-pulse', 'fa-fw');
+    cfg.states.controlsLocked = !cfg.states.controlsLocked;
+    update();
+}
+
+function UpdatePIDBtn(e)
+{
+    cfg.states.kp = parseFloat(document.getElementById('inP').value || cfg.states.kp);
+    cfg.states.ki = parseFloat(document.getElementById('inI').value || cfg.states.ki);
+    cfg.states.kd = parseFloat(document.getElementById('inD').value || cfg.states.kd);
+
+    document.getElementById('inP').value = "";
+    document.getElementById('inI').value = "";
+    document.getElementById('inD').value = "";
+    update();
 }

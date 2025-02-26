@@ -11,12 +11,25 @@ double computePID(double setpoint, double input, double kp, double ki, double kd
 BaseProfile* getPreviousProfile();
 BaseProfile* getNextProfile();
 uint16_t readPoti();
+
+// display.cpp
+void initLCD();
+void showOutputPower();
+void showMessage(const char* msg);
+void showSelectedProfile();
+void showPreviousProfile();
+void showNextProfile();
 void clearRow(uint8_t y);
 void clearFirstRow();
 void clearSecondRow();
 void printSpaceBetween(String left, String right);
 void showTemperature(uint8_t startPos, uint16_t temp);
 void showTemperatures(uint16_t currentTemp, uint16_t setTemp);
+
+// storage.cpp
+void initStorage();
+void savePID();
+void loadFromStorage();
 
 // server.cpp
 void initServer();

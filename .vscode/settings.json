@@ -20,6 +20,8 @@
         "vector": "cpp",
         "cstddef": "cpp",
         "chrono": "cpp",
-        "cmath": "cpp"
+        "cmath": "cpp",
+        "bitset": "cpp",
+        "memory": "cpp"
     }
 }

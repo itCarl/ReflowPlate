@@ -7,9 +7,8 @@
  */
 #define IDLE_SAFETY_TEMPERATURE 15
 #define MAX_POTI_TIME 30 * 60 * 1000 // in ms; 5 minutes
-#define PRINT_DEBUG // OR
+// #define PRINT_DEBUG // OR
 // #define PRINT_PLOT
-#define USE_PID
 // #define PID_AUTOTUNE
 
 /*

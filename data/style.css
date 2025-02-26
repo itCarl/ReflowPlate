@@ -1,13 +1,25 @@
+:root {
+    --rp-clr-primary: #35bd84;
+    --rp-clr-primary-dark: #2ca371;
+    --rp-clr-secondary: ;
+    --rp-clr-warning: #bbb44f;
+    --rp-clr-warning-dark: #97913b;
+    --rp-clr-danger: #ff0000;
+    --rp-clr-danger-dark: #e40404;
+    --rp-clr-cool: #7CB9E8;
+    --rp-clr-success: #35bd84;
+    --rp-clr-success-dark: rgb(63, 173, 127);
+}
 
 body {
-    background-color: #2c3544;
+    background-color: #1e2f3f;
     width: 100vw;
     padding: 4rem 0 0 0;
 }
 
 hr {
     border-width: 0.1rem;
-    border-color: #143642;
+    border-color: #1f1b35;
     opacity: 1;
 }
 
@@ -26,6 +38,33 @@ input::-webkit-inner-spin-button {
 input[type=number] {
   -moz-appearance: textfield;
 }
+
+button {
+    background-color: var(--rp-clr-primary);
+    border-color: var(--rp-clr-primary);
+}
+
+.btn-cooldown {
+    margin-bottom: 5rem;
+    background-color: var(--rp-clr-cool);
+    border-color: var(--rp-clr-cool);
+}
+
+.btn-danger {
+    background-color: var(--rp-clr-danger);
+    border-color: var(--rp-clr-danger-dark);
+}
+
+.btn-success {
+    background-color: var(--rp-clr-success);
+    border-color: var(--rp-clr-success-dark);
+}
+
+#btnStart, #btnStop {
+    width: 100%;
+    font-size: 1.5rem;
+}
+
 
 .live-dot {
     animation: fadeinout 2.25s ease-in-out infinite;
@@ -61,12 +100,6 @@ input[type=number] {
     background-color: #3e4c58;
 }
 
-.header h3 {
-    display: inline-block;
-    margin-bottom: 0;
-    color: #fff;
-}
-
 .brand-logo {
     display: flex;
     background-color: #fff;
@@ -75,9 +108,55 @@ input[type=number] {
     margin-right: 2rem;
 }
 
+.header h3 {
+    display: inline-block;
+    margin-bottom: 0;
+    color: #fff;
+    margin-right: auto;
+}
+
+.header .quickActions {
+    font-size: 2rem;
+    margin-right: 3rem;
+}
+
+.header .quickActions div {
+    display: inline;
+    cursor: pointer;
+}
+
+.header .quickActions div:not(:last-child) {
+    margin-right: 2rem;
+}
+
+#btnLock {
+    text-align: center;
+    width: 30px;
+}
+
+#btnRestart {
+    color: var(--rp-clr-warning);
+}
+
+.unlocked {
+    color: #4d9e54;
+}
+
+.locked {
+    color: #9e4d4d;
+}
+
 .body {
     display: flex;
-    background-color: #b5cadd;
+    background-color: #dddddd;
+}
+
+.label {
+    position: absolute;
+    bottom: 0;
+    font-size: 5rem;
+    font-weight: 600;
+    opacity: .3;
 }
 
 /* .info {
@@ -117,7 +196,7 @@ input[type=number] {
     margin: 0;
 }
 
-.pidControl .row {
+.pidControl .row:nth-child(2) {
     margin-bottom: .5rem;
 }
 
@@ -130,7 +209,8 @@ input[type=number] {
 }
 
 .pidControl .row .column {
-    display: flex;
+    /* display: flex; */
+    text-align: center;
 }
 
 .content {
