@@ -155,6 +155,7 @@ RP_GLOBAL unsigned long mode3ElapsedTime _INIT(0);
 // PIDTuner tuner(1.0, 150.0, WindowSize);
 
 RP_GLOBAL uint16_t rawPotiValue _INIT(0);
+RP_GLOBAL uint16_t oldRawPotiValue _INIT(0);
 RP_GLOBAL uint16_t potiValue _INIT(0);
 RP_GLOBAL bool potiValueChanged _INIT(false);
 RP_GLOBAL unsigned long potiSettleTime _INIT(850);

@@ -1,12 +1,12 @@
 <p align="center">
     <a href="https://github.com/itCarl/ReflowPlate" target="_blank">
-        <img src="https://github.com/itCarl/ReflowPlate/blob/master/assets/logo_repo.png" width="100">
+        <img src="https://github.com/itCarl/ReflowPlate/blob/master/assets/logo_repo.png" width="150">
     </a>
 </p>
 
 ## Welcome to the ReflowPlate Project 🔧
 
-A collection of more or less useful management software written by the BlubberLounge Team ❤️‍🔥
+More or less useful management software to control a ReflowPlate/HotPlate for reflowing solderpaste ❤️‍🔥
 
 ## ⚙️ Features
 

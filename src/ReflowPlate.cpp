@@ -42,34 +42,34 @@ void ReflowPlate::setup()
     initConnection();
     initServer();
 
-  ElegantOTA.begin(&server);
-  server.begin();
-  DEBUG_PRINTLN("Web Server started");
+    ElegantOTA.begin(&server);
+    server.begin();
+    DEBUG_PRINTLN("Web Server started");
 
 #ifdef PID_AUTOTUNE
-  LCD.print("PID tune");
-  // tuner.startWarmup(5 * 1000);
-  tuner.setTargetInputValue(150);
-  tuner.setLoopInterval(tempControlInterval*1000);
-  tuner.setOutputRange(0, WindowSize);
-  tuner.setZNMode(PIDAutotuner::znModeBasicPID);
-  tuner.setTuningCycles(5);
-  digitalWrite(RELAY, HIGH);
-  delay(1000);
-  tuner.startTuningLoop();
+    LCD.print("PID tune");
+    // tuner.startWarmup(5 * 1000);
+    tuner.setTargetInputValue(150);
+    tuner.setLoopInterval(tempControlInterval*1000);
+    tuner.setOutputRange(0, WindowSize);
+    tuner.setZNMode(PIDAutotuner::znModeBasicPID);
+    tuner.setTuningCycles(5);
+    digitalWrite(RELAY, HIGH);
+    delay(1000);
+    tuner.startTuningLoop();
 #else
-  LCD.print(selectedProfile->getDisplayName());
-  showTemperatures(Input, mode == 1 ? IDLE_SAFETY_TEMPERATURE : readPoti());
+    LCD.print(selectedProfile->getDisplayName());
+    showTemperatures(Input, mode == 1 ? IDLE_SAFETY_TEMPERATURE : readPoti());
 #endif
 
-  lastTime = millis();
-  windowStartTime = millis();
+    lastTime = millis();
+    windowStartTime = millis();
 
-  rawPotiValue = potiValue = roundToNearestFive(readPoti());
-  DEBUG_PRINTLN(potiValue);
+    rawPotiValue = oldRawPotiValue = potiValue = roundToNearestFive(readPoti());
+    DEBUG_PRINTLN(potiValue);
 
-  PLOT_PRINTLN("Setpoint,Temp,OnTime%,Time");
-  PLOT_PRINTF("PID Values: Kp:%.3f | Ki:%.3f | Kd:%.3f\n", Kp, Ki, Kd);
+    PLOT_PRINTLN("Setpoint,Temp,OnTime%,Time");
+    PLOT_PRINTF("PID Values: Kp:%.3f | Ki:%.3f | Kd:%.3f\n", Kp, Ki, Kd);
 }
 
 void ReflowPlate::loop()
@@ -156,7 +156,8 @@ void ReflowPlate::loop()
         rawPotiValue = readPoti();
 
         // Apply hysteresis
-        if (abs(potiValue - rawPotiValue) > 4) {
+        if (abs(oldRawPotiValue - rawPotiValue) > 4) {
+            oldRawPotiValue = rawPotiValue;
             potiValue = roundToNearestFive(rawPotiValue);
             lastPotiChangeTime = millis();
             potiValueChanged = true;
