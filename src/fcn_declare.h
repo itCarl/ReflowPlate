@@ -10,6 +10,8 @@ uint16_t roundToNearestFive(uint16_t num);
 double computePID(double setpoint, double input, double kp, double ki, double kd);
 BaseProfile* getPreviousProfile();
 BaseProfile* getNextProfile();
+BaseProfile* selectProfileByIndex(uint8_t index);
+BaseProfile* selectProfileById(long id);
 uint16_t readPoti();
 
 // display.cpp
@@ -28,8 +30,8 @@ void showTemperatures(uint16_t currentTemp, uint16_t setTemp);
 
 // storage.cpp
 void initStorage();
-void savePID();
-void loadFromStorage();
+void loadConfig();
+void saveConfig();
 
 // server.cpp
 void initServer();

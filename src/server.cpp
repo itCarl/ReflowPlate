@@ -48,6 +48,7 @@ void notify()
     meta["kp"] = Kp;
     meta["ki"] = Ki;
     meta["kd"] = Kd;
+    meta["sprof"] = selectedProfile->getId();
     meta["controlsLocked"] = controlsLocked;
 
     JsonArray temp = doc["temp"].to<JsonArray>();
@@ -85,7 +86,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
             Kp = receivedData["kp"] | Kp;
             Ki = receivedData["ki"] | Ki;
             Kd = receivedData["kd"] | Kd;
-            savePID();
+            saveConfig();
             sendResponse = true; // necessary for fast UI updates
 
         } else if (strcmp(cmd, "getCfg") == 0) {
@@ -95,17 +96,26 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
             cfg["versionCode"] = VERSION_CODE;
             cfg["buildTime"] = BUILD_TIME;
 
-            JsonArray jProfiles = cfg.createNestedArray("profiles");
+            JsonArray jProfiles = cfg["profiles"].to<JsonArray>();
             for (int i = 0; i < (sizeof(profiles)/sizeof(*profiles)); i++) {
                 JsonObject profile = jProfiles.add<JsonObject>();
                 profiles[i]->serialize(profile);
             }
+            sendResponse = true;
 
         } else if (strcmp(cmd, "start") == 0) {
-            ReflowPlate::instance().reset();
+            showMessage("Confirmed!");
+            mode = 2;
+            selectedProfile->startReflow();
 
         }  else if (strcmp(cmd, "stop") == 0) {
-            ReflowPlate::instance().reset();
+            showMessage("Aborted!");
+            mode = 1;
+            showSelectedProfile();
+
+        }  else if (strcmp(cmd, "selProf") == 0) {
+            selectProfileById(doc["data"]);
+            showSelectedProfile();
 
         } else if (strcmp(cmd, "rstCntlr") == 0) {
             ReflowPlate::instance().reset();

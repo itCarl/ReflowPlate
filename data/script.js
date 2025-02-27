@@ -1,3 +1,4 @@
+var d = document;
 // var gateway = `ws://${window.location.hostname}/ws`;
 var gateway = `ws://192.168.178.81/ws`;
 var websocket;
@@ -5,43 +6,19 @@ var start;
 var myChart;
 var cfg = {
     states: {
-        kp: 0,
-        ki: 0,
-        kd: 0
         // all possible element states will be saved here
     }
     // will be filled on connection
 };
 var s = t => t/1000;
 var isEmpty = str => !str?.length;
+var byId = id => d.getElementById(id);
+var onClick = (id, cb) => d.getElementById(id).addEventListener('click', cb);
 window.addEventListener('load', onLoad);
-
-function initWebSocket()
-{
-    console.log('Trying to open a WebSocket connection...');
-    websocket = new WebSocket(gateway);
-    websocket.onopen    = onOpen;
-    websocket.onclose   = onClose;
-    websocket.onmessage = onMessage;
-}
-
-function onOpen(event)
-{
-    console.log('Connection opened');
-    getConfig();
-    start = new Date();
-}
-
-function onClose(event)
-{
-    console.log('Connection closed');
-    setTimeout(initWebSocket, 2000);
-    clearProfiles();
-}
 
 function clearProfiles()
 {
-    let profilesContainer = document.getElementById('profiles');
+    let profilesContainer = byId('profiles');
     profilesContainer.replaceChildren();
 }
 
@@ -67,6 +44,34 @@ function enrichData(data)
     });
 }
 
+function onLoad(event)
+{
+    initWebSocket();
+}
+
+function initWebSocket()
+{
+    console.log('Trying to open a WebSocket connection...');
+    websocket = new WebSocket(gateway);
+    websocket.onopen    = onOpen;
+    websocket.onclose   = onClose;
+    websocket.onmessage = onMessage;
+}
+
+function onOpen(event)
+{
+    console.log('Connection opened');
+    getConfig();
+    start = new Date();
+}
+
+function onClose(event)
+{
+    console.log('Connection closed');
+    setTimeout(initWebSocket, 2000);
+    clearProfiles();
+}
+
 function onMessage(event)
 {
     let data = JSON.parse(event.data);
@@ -77,14 +82,22 @@ function onMessage(event)
         // process static config
         let cfg = data.cfg;
 
-        document.getElementById('version').innerHTML = cfg.version;
-        document.getElementById('buildTime').innerHTML = cfg.buildTime;
+        byId('version').innerHTML = cfg.version;
+        byId('buildTime').innerHTML = cfg.buildTime;
 
-        let profilesContainer = document.getElementById('profiles');
+        let profilesContainer = byId('profiles');
         cfg.profiles.forEach(e => {
-            let btn = document.createElement('button');
+            let btn = d.createElement('button');
             btn.innerHTML = e.name;
+            btn.classList.add('button-outline');
+            btn.dataset.prid = e.id;
             btn.title = `max. Temperature: ${e.maxTemp}°C\ntotal time: ${s(e.totalTime)}s\n--------------------\npreheat: ${s(e.preheatTime)}s@${e.preheatTemp}°C\nsoak: ${s(e.soakTime)}s@${e.soakTemp}°C\nreflow: ${s(e.reflowTime)}s@${e.reflowTemp}°C\ncooldown: ${s(e.coolTime)}s@${e.coolTemp}°C`;
+            btn.addEventListener('click', el => {
+                sendMessage({
+                    cmd: "selProf",
+                    data: e.id
+                });
+            });
             profilesContainer.append(btn);
         });
     }
@@ -92,12 +105,23 @@ function onMessage(event)
     if(data.meta) {
         // process Metadata
         let metaData = data.meta;
-        document.getElementById('inP').placeholder = cfg.states.kp = metaData.kp;
-        document.getElementById('inI').placeholder = cfg.states.ki = metaData.ki;
-        document.getElementById('inD').placeholder = cfg.states.kd = metaData.kd;
+        byId('inP').placeholder = cfg.states.kp = metaData.kp;
+        byId('inI').placeholder = cfg.states.ki = metaData.ki;
+        byId('inD').placeholder = cfg.states.kd = metaData.kd;
+
+        cfg.states.selectedProfile = metaData.sprof;
+
+        let profiles = byId('profiles');
+        profiles.querySelector(`[data-prid="${metaData.sprof}"]`).classList.remove('button-outline');
+        profiles.querySelectorAll(`[data-prid]:not([data-prid="${metaData.sprof}"])`).forEach(profile => {
+            if (!profile.classList.contains('button-outline')) {
+                profile.classList.add('button-outline');
+            }
+        });
+
         cfg.states.controlsLocked = metaData.controlsLocked;
 
-        const btnLock = document.getElementById('btnLock').firstChild;
+        const btnLock = byId('btnLock').firstChild;
         var btnLockClass = btnLock.classList;
         btnLockClass.remove('fa-spinner');
         btnLockClass.remove('fa-pulse');
@@ -124,9 +148,9 @@ function onMessage(event)
         // console.log(tempData);
 
         const mostRecentData = tempData[tempData.length - 1];
-        document.getElementById('currentTemp').innerHTML = mostRecentData.temp;
-        document.getElementById('setpointTemp').innerHTML = mostRecentData.setpoint;
-        document.getElementById('pwr').innerHTML = mostRecentData.pwr;
+        byId('currentTemp').innerHTML = mostRecentData.temp;
+        byId('setpointTemp').innerHTML = mostRecentData.setpoint;
+        byId('pwr').innerHTML = mostRecentData.pwr;
 
         myChart.setOption({
             xAxis: {
@@ -151,10 +175,6 @@ function onMessage(event)
             ]
         });
     }
-    // document.getElementById('battery_voltage').innerHTML = battery_voltage;
-    // document.getElementById('battery_level').innerHTML = battery_percent;
-    // document.getElementById('airflow').innerHTML = airflow;
-    // document.getElementById('timer').innerHTML = getTimerTime(data.startTimer, data.endTimer);
 }
 
 /**
@@ -179,10 +199,55 @@ function leftPadArray(arr, padObj, targetLength = 150)
     return padArray.concat(arr);
 }
 
-document.addEventListener("DOMContentLoaded", function()
+function sendMessage(msg)
+{
+    websocket.send(JSON.stringify(msg));
+}
+
+function update()
+{
+    sendMessage({
+        cmd: "upt",
+        states: cfg.states
+    });
+}
+
+function getConfig()
+{
+    sendMessage({
+        cmd: "getCfg"
+    });
+}
+
+function toggleLockBtn(e)
+{
+    let el = e.currentTarget.firstChild;
+    el.classList.remove('fa-lock');
+    el.classList.remove('fa-lock-open');
+    el.classList.remove('unlocked');
+    el.classList.remove('locked');
+    el.classList.add('fa-spinner', 'fa-pulse', 'fa-fw');
+    cfg.states.controlsLocked = !cfg.states.controlsLocked;
+    update();
+}
+
+function UpdatePIDBtn(e)
+{
+    cfg.states.kp = parseFloat(byId('inP').value || cfg.states.kp);
+    cfg.states.ki = parseFloat(byId('inI').value || cfg.states.ki);
+    cfg.states.kd = parseFloat(byId('inD').value || cfg.states.kd);
+
+    byId('inP').value = "";
+    byId('inI').value = "";
+    byId('inD').value = "";
+    update();
+}
+
+
+d.addEventListener("DOMContentLoaded", function()
 {
     var data = [];
-    var chartDom = document.getElementById('mainChart');
+    var chartDom = byId('mainChart');
 
     myChart = echarts.init(chartDom, 'dark', { // 'dark'
         renderer: 'canvas',
@@ -253,67 +318,25 @@ document.addEventListener("DOMContentLoaded", function()
     }
     // option && myChart.setOption(option);
 
-    document.getElementById('chartSkeleton').classList.add('loaded');
-    document.getElementById('mainChart').style.display = 'block';
-    document.getElementById('btnLock').addEventListener('click', toggleLockBtn);
-    document.getElementById('btnRestart').addEventListener('click', restartController);
-    document.getElementById('btnUpdatePID').addEventListener('click', UpdatePIDBtn);
+    byId('chartSkeleton').classList.add('loaded');
+    byId('mainChart').style.display = 'block';
+    onClick('btnLock', toggleLockBtn);
+    onClick('btnRestart', e => {
+        sendMessage({
+            cmd: "rstCntlr"
+        })
+    });
+    onClick('btnStart', e => {
+        sendMessage({
+            cmd: "start"
+        })
+    });
+    onClick('btnStop', e => {
+        sendMessage({
+            cmd: "stop"
+        })
+    });
+    onClick('btnUpdatePID', UpdatePIDBtn);
 
     window.addEventListener('resize', myChart.resize);
 });
-
-function onLoad(event)
-{
-    initWebSocket();
-}
-
-function sendMessage(msg)
-{
-    websocket.send(JSON.stringify(msg));
-}
-
-function update()
-{
-    sendMessage({
-        cmd: "upt",
-        states: cfg.states
-    });
-}
-
-function getConfig()
-{
-    sendMessage({
-        cmd: "getCfg"
-    });
-}
-
-function restartController()
-{
-    sendMessage({
-        cmd: "rstCntlr"
-    });
-}
-
-function toggleLockBtn(e)
-{
-    let el = e.currentTarget.firstChild;
-    el.classList.remove('fa-lock');
-    el.classList.remove('fa-lock-open');
-    el.classList.remove('unlocked');
-    el.classList.remove('locked');
-    el.classList.add('fa-spinner', 'fa-pulse', 'fa-fw');
-    cfg.states.controlsLocked = !cfg.states.controlsLocked;
-    update();
-}
-
-function UpdatePIDBtn(e)
-{
-    cfg.states.kp = parseFloat(document.getElementById('inP').value || cfg.states.kp);
-    cfg.states.ki = parseFloat(document.getElementById('inI').value || cfg.states.ki);
-    cfg.states.kd = parseFloat(document.getElementById('inD').value || cfg.states.kd);
-
-    document.getElementById('inP').value = "";
-    document.getElementById('inI').value = "";
-    document.getElementById('inD').value = "";
-    update();
-}

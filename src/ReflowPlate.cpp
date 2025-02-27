@@ -19,6 +19,7 @@ void ReflowPlate::setup()
 
     analogReadResolution(12);
     analogSetAttenuation(ADC_11db);
+    randomSeed(esp_random());   // prepare for random number generation
 
     therm1 = new NTC_Thermistor_ESP32(
         THERM_1,
@@ -64,7 +65,7 @@ void ReflowPlate::setup()
   lastTime = millis();
   windowStartTime = millis();
 
-  rawPotiValue = potiValue = oldPotiValue = roundToNearestFive(readPoti());
+  rawPotiValue = potiValue = roundToNearestFive(readPoti());
   DEBUG_PRINTLN(potiValue);
 
   PLOT_PRINTLN("Setpoint,Temp,OnTime%,Time");
@@ -157,21 +158,25 @@ void ReflowPlate::loop()
         // Apply hysteresis
         if (abs(potiValue - rawPotiValue) > 4) {
             potiValue = roundToNearestFive(rawPotiValue);
+            lastPotiChangeTime = millis();
+            potiValueChanged = true;
         } else {
             rawPotiValue = potiValue;
         }
 
-        if(potiValue != oldPotiValue && (mode == 1 || mode == 3)) {
-            oldPotiValue = potiValue;
+        if(potiValueChanged && (mode == 1 || mode == 3)) {
             Setpoint = potiValue;
             showTemperatures(oldCurrentTemp, Setpoint);
+            printSpaceBetween("Setting...", " ");    // ugly fix
             mode = 3;
             mode3StartTime = millis();
+            potiValueChanged = false;
         }
 
         if(!digitalRead(BTN_PREV) && btnPrevPressed && mode != 2) {
             btnPrevPressed = false;
             if(mode != 3) showPreviousProfile();
+            if(mode == 3) showSelectedProfile();
             mode = 1;
             Setpoint = IDLE_SAFETY_TEMPERATURE;
         } else if(digitalRead(BTN_PREV) && !btnPrevPressed && mode != 2) {
@@ -181,6 +186,7 @@ void ReflowPlate::loop()
         if(!digitalRead(BTN_NEXT) && btnNextPressed && mode != 2) {
             btnNextPressed = false;
             if(mode != 3) showNextProfile();
+            if(mode == 3) showSelectedProfile();
             mode = 1;
             Setpoint = IDLE_SAFETY_TEMPERATURE;
         } else if(digitalRead(BTN_NEXT) && !btnNextPressed && mode != 2) {
@@ -216,9 +222,7 @@ void ReflowPlate::loop()
 
         if(mode == 2 && selectedProfile->isReflowComplete()) {
             mode = 1;
-            clearFirstRow();
-            LCD.home();
-            LCD.print(selectedProfile->getDisplayName());
+            showSelectedProfile();
         }
 
         lastControlTime = millis();
@@ -257,7 +261,7 @@ void ReflowPlate::loop()
 
     } else if(mode == 2) {
         printSpaceBetween(selectedProfile->showProfileState(), String(selectedProfile->getTimeLeft()) + "s");
-    } else if(mode == 3) {
+    } else if(mode == 3 && (millis() - lastPotiChangeTime >= potiSettleTime)) {
         printSpaceBetween("PotiControl", String(mode3ElapsedTime / 1000) + "s");
     }
 
@@ -284,11 +288,19 @@ void ReflowPlate::loop()
     DEBUG_PRINTLN("");
 }
 
-void ReflowPlate::reset()
+void ReflowPlate::restart()
 {
     ws.closeAll(1012);
-    DEBUG_PRINTLN("ReflowPlate Reset");
+    WiFi.disconnect();
+    DEBUG_PRINTLN("ReflowPlate restart");
     ESP.restart();
+}
+
+void ReflowPlate::reset()
+{
+    DEBUG_PRINTLN("ReflowPlate reset");
+    storage.clear();
+    ReflowPlate::instance().restart();
 }
 
 void ReflowPlate::initPins()

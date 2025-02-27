@@ -26,7 +26,6 @@ uint16_t roundToNearestFive(uint16_t num)
     return ((num + 2) / 5) * 5;
 }
 
-#ifdef USE_PID
 double computePID(double setpoint, double input, double kp, double ki, double kd)
 {
     static double lastError = 0.0, integral = 0.0;
@@ -46,24 +45,48 @@ double computePID(double setpoint, double input, double kp, double ki, double kd
 
     return (kp * error) + (ki * integral) + (kd * derivative);
 }
-#endif
 
 /*
- *  Menu Utillity
+ *  Profile Utillity
  */
 BaseProfile* getPreviousProfile()
 {
-    selectedProfileIndex = selectedProfileIndex == 0 ? (sizeof(profiles)/sizeof(*profiles))-1 : --selectedProfileIndex;
-    selectedProfile = profiles[selectedProfileIndex];
-    DEBUG_PRINTLN("prev");
-    return selectedProfile;
+    return selectProfileByIndex(selectedProfileIndex == 0 ? (sizeof(profiles)/sizeof(*profiles))-1 : --selectedProfileIndex);
 }
 
 BaseProfile* getNextProfile()
 {
-    selectedProfileIndex = ++selectedProfileIndex % (sizeof(profiles)/sizeof(*profiles));
+    return selectProfileByIndex(++selectedProfileIndex % (sizeof(profiles)/sizeof(*profiles)));
+}
+
+BaseProfile* selectProfileByIndex(uint8_t index)
+{
+    uint8_t numProfiles = (sizeof(profiles)/sizeof(*profiles));
+    if(index > numProfiles)
+        return selectedProfile;
+
+    selectedProfileIndex = index;
     selectedProfile = profiles[selectedProfileIndex];
-    DEBUG_PRINTLN("next");
+
+    DEBUG_PRINTF("Selected profile at index %d with name: %s", selectedProfileIndex, selectedProfile->getDisplayName().c_str());
+    return selectedProfile;
+}
+
+BaseProfile* selectProfileById(long id)
+{
+    uint8_t numProfiles = (sizeof(profiles) / sizeof(*profiles));
+
+    for (uint8_t i = 0; i < numProfiles; i++) {
+        if (profiles[i]->getId() == id) {
+            selectedProfileIndex = i;
+            selectedProfile = profiles[selectedProfileIndex];
+
+            DEBUG_PRINTF("Selected profile with ID %ld at index %d with name: %s", id, selectedProfileIndex, selectedProfile->getDisplayName().c_str());
+            return selectedProfile;
+        }
+    }
+
+    DEBUG_PRINTLN("Profile with the given ID not found.");
     return selectedProfile;
 }
 

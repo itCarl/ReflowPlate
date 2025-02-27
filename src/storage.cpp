@@ -9,20 +9,27 @@ void initStorage()
         DEBUG_PRINTLN("Little FS Mounted Successfully");
     }
 
-    storage.begin("rp", false);
-    loadFromStorage();
+    loadConfig();
 }
 
-void loadFromStorage()
+void loadConfig()
 {
+    storage.begin("cfg", false);
+
     Kp = storage.getDouble("Kp", Kp);
-    Ki = storage.getDouble("Kp", Ki);
-    Kd = storage.getDouble("Kp", Kd);
+    Ki = storage.getDouble("Ki", Ki);
+    Kd = storage.getDouble("Kd", Kd);
+
+    storage.end();
 }
 
-void savePID()
+void saveConfig()
 {
+    storage.begin("cfg", false);
+
     storage.putDouble("Kp", Kp);
     storage.putDouble("Ki", Ki);
     storage.putDouble("Kd", Kd);
+
+    storage.end();
 }

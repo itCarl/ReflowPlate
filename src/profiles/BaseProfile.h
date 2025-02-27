@@ -2,6 +2,7 @@
 #define BaseProfile_h
 
 #include <Arduino.h>
+// #include <set>
 
 enum State {
     IDLE,
@@ -17,6 +18,7 @@ class BaseProfile
     private:
 
     protected:
+        long id = random(); // not very likley but ids could overlap
         String displayName;
         uint16_t maxTemp = 0;
         unsigned long totalTime = 0;
@@ -102,8 +104,9 @@ class BaseProfile
             }
         }
 
-        void serialize(JsonObject& obj) const
+        void serialize(JsonObject& obj)
         {
+            obj["id"] = this->getId();
             obj["name"] = this->getDisplayName();
             obj["maxTemp"] = this->getMaxTemp();
             obj["totalTime"] = this->getTotalTime();
@@ -122,6 +125,11 @@ class BaseProfile
         /*
          *      GETTER & SETTER
          */
+        long getId()
+        {
+            return this->id;
+        }
+
         virtual String getDisplayName() const
         {
             return this->displayName;

@@ -28,7 +28,6 @@ void showOutputPower()
 void showMessage(const char* msg)
 {
     clearFirstRow();
-    LCD.home();
     LCD.print(msg);
     delay(1000);
 }
@@ -36,21 +35,18 @@ void showMessage(const char* msg)
 void showSelectedProfile()
 {
     clearFirstRow();
-    LCD.home();
     LCD.print(selectedProfile->getDisplayName());
 }
 
 void showPreviousProfile()
 {
     clearFirstRow();
-    LCD.home();
     LCD.print(getPreviousProfile()->getDisplayName());
 }
 
 void showNextProfile()
 {
     clearFirstRow();
-    LCD.home();
     LCD.print(getNextProfile()->getDisplayName());
 }
 
@@ -64,6 +60,7 @@ void clearRow(uint8_t y)
     const char emptyLine[17] = "                "; // 16 spaces + null terminator
     LCD.setCursor(0, y);
     LCD.print(emptyLine);
+    LCD.setCursor(0, y);
 }
 
 void clearFirstRow()
@@ -76,14 +73,28 @@ void clearSecondRow()
     clearRow(1);
 }
 
+void clearRowSegment(uint8_t y, uint8_t start, uint8_t end) {
+    if (start > end || end >= 16) return; // Invalid range
+
+    LCD.setCursor(start, y);
+    for (uint8_t i = start; i <= end; i++) {
+        LCD.print(" ");
+    }
+    LCD.setCursor(start, y);
+}
+
 void printSpaceBetween(String left, String right)
 {
-    LCD.home();
-    clearFirstRow();
+    static String leftOld = "";
+    static String rightOld = "";
 
-    int leftLength = left.length();
-    int rightLength = right.length();
-    int spaceBetween = 16 - (leftLength + rightLength);
+    if (leftOld == left && rightOld == right) return; // No update needed
+    if (leftOld != left && rightOld != right) clearFirstRow();
+
+    uint8_t leftLength = left.length();
+    uint8_t rightLength = right.length();
+    uint8_t spaceBetween = 16 - (leftLength + rightLength);
+    uint8_t offset = leftLength + spaceBetween;
 
     if (spaceBetween < 0) {
         LCD.home();
@@ -92,9 +103,18 @@ void printSpaceBetween(String left, String right)
     }
 
     LCD.home();
-    LCD.print(left);
-    LCD.setCursor(leftLength + spaceBetween, 0);
-    LCD.print(right);
+    if(leftOld != left) {
+        clearRowSegment(0, 0, leftLength);
+        LCD.print(left);
+        leftOld = left;
+    }
+
+    if(rightOld != right) {
+        clearRowSegment(0, offset, 15);
+        LCD.setCursor(offset, 0);
+        LCD.print(right);
+        rightOld = right;
+    }
 }
 
 void showTemperature(uint8_t startPos, uint16_t temp)

@@ -108,17 +108,7 @@ RP_GLOBAL double LastError _INIT(0.0);
 RP_GLOBAL double Integral _INIT(0.0);
 RP_GLOBAL unsigned long lastTime _INIT(0);
 
-// Good but not perfect
-// double Kp = 6.45;
-// double Ki = 0;
-// double Kd = 45;
-
-// stable amplitude
-// double Kp = 38;
-// double Ki = 0;
-// double Kd = 0;
-
-// near perfect
+// it's okay
 RP_GLOBAL double Kp _INIT(21.55);
 RP_GLOBAL double Ki _INIT(0.070);
 RP_GLOBAL double Kd _INIT(320);
@@ -166,7 +156,9 @@ RP_GLOBAL unsigned long mode3ElapsedTime _INIT(0);
 
 RP_GLOBAL uint16_t rawPotiValue _INIT(0);
 RP_GLOBAL uint16_t potiValue _INIT(0);
-RP_GLOBAL uint16_t oldPotiValue _INIT(0);
+RP_GLOBAL bool potiValueChanged _INIT(false);
+RP_GLOBAL unsigned long potiSettleTime _INIT(850);
+RP_GLOBAL unsigned long lastPotiChangeTime _INIT(0);
 
 RP_GLOBAL uint16_t oldSetTemp _INIT(0);
 RP_GLOBAL uint16_t oldCurrentTemp _INIT(0);
@@ -233,6 +225,7 @@ class ReflowPlate
         void setup();
         void loop();
         void reset();
+        void restart();
 
         void initPins();
         void initConnection();

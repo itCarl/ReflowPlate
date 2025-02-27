@@ -12,7 +12,8 @@
 }
 
 body {
-    background-color: #1e2f3f;
+    -webkit-font-smoothing: antialiased;
+    background-color: #131424;
     width: 100vw;
     padding: 4rem 0 0 0;
 }
@@ -102,7 +103,9 @@ button {
 
 .brand-logo {
     display: flex;
-    background-color: #fff;
+    background-color: rgba(255, 210, 0,1);
+    background-color: #ffb600;
+    /* background: linear-gradient(220deg, rgba(255, 210, 0,1) 0%, rgba(250, 0, 255, 1) 100%); */
     text-align: center;
     padding: 1.5rem;
     margin-right: 2rem;

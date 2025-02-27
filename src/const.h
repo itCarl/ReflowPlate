@@ -10,6 +10,7 @@
 // #define PRINT_DEBUG // OR
 // #define PRINT_PLOT
 // #define PID_AUTOTUNE
+#define MAX_PROFILES 5
 
 /*
  *      GPIO definitions
