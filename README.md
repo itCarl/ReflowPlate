@@ -1,6 +1,6 @@
 <p align="center">
     <a href="https://github.com/itCarl/ReflowPlate" target="_blank">
-        <img src="https://github.com/itCarl/ReflowPlate/blob/master/assets/logo_repo.png" width="300">
+        <img src="https://github.com/itCarl/ReflowPlate/blob/master/assets/logo_repo.png" width="100">
     </a>
 </p>
 
