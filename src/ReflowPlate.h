@@ -1,6 +1,7 @@
 #pragma once
 #ifndef ReflowPlate_h
 #define ReflowPlate_h
+#define ELEGANTOTA_USE_ASYNC_WEBSERVER 1
 
 #include <WiFi.h>
 // #include <DNSServer.h>
@@ -88,13 +89,11 @@ RP_GLOBAL PIDAutotuner tuner;
 
 struct TemperatureData {
     unsigned long timestamp;    // 4 bytes (on ESP32)
-    uint8_t pwr;                // 1 byte  (on ESP32)
     double input;               // 8 bytes (on ESP32)
     double setpoint;            // 8 bytes (on ESP32)
 
     void serialize(JsonObject& obj) const {
         obj["timestamp"] = timestamp;
-        obj["pwr"] = pwr;
         obj["temp"] = input;
         obj["setpoint"] = setpoint;
     }
@@ -130,6 +129,7 @@ RP_GLOBAL BaseProfile* selectedProfile _INIT(profiles[selectedProfileIndex]);
  *  10 = settings menu
  */
 RP_GLOBAL uint8_t mode _INIT(1);
+RP_GLOBAL bool initialized _INIT(false);
 
 RP_GLOBAL bool controlsLocked _INIT(false);
 
@@ -158,13 +158,13 @@ RP_GLOBAL uint16_t rawPotiValue _INIT(0);
 RP_GLOBAL uint16_t oldRawPotiValue _INIT(0);
 RP_GLOBAL uint16_t potiValue _INIT(0);
 RP_GLOBAL bool potiValueChanged _INIT(false);
-RP_GLOBAL unsigned long potiSettleTime _INIT(850);
+RP_GLOBAL unsigned long potiSettleTime _INIT(550);
 RP_GLOBAL unsigned long lastPotiChangeTime _INIT(0);
 
 RP_GLOBAL uint16_t oldSetTemp _INIT(0);
 RP_GLOBAL uint16_t oldCurrentTemp _INIT(0);
 
-RP_GLOBAL const float alpha _INIT(0.12);
+RP_GLOBAL const float alpha _INIT(0.09);
 RP_GLOBAL float filteredTemperature _INIT(0.0);
 
 RP_GLOBAL bool btnPrevPressed _INIT(false);

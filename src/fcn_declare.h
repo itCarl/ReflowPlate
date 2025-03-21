@@ -2,11 +2,18 @@
 #ifndef FCNDeclare_h
 #define FCNDeclare_h
 
+#include "ReflowPlate.h"
+
 // utils.cpp
 inline unsigned long Seconds(unsigned long sec);
 float round(float x, uint8_t decimals);
 double round(double x, uint8_t decimals);
 uint16_t roundToNearestFive(uint16_t num);
+template <typename T>
+void smooth(T& filteredValue, T newValue, float alpha)
+{
+    filteredValue = alpha * newValue + (1 - alpha) * filteredValue;
+}
 double computePID(double setpoint, double input, double kp, double ki, double kd);
 BaseProfile* getPreviousProfile();
 BaseProfile* getNextProfile();
@@ -36,6 +43,7 @@ void saveConfig();
 // server.cpp
 void initServer();
 void notify();
+void notfiyPwr();
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len);
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
 String processor(const String& var);

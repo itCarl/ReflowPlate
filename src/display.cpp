@@ -89,7 +89,7 @@ void printSpaceBetween(String left, String right)
     static String rightOld = "";
 
     if (leftOld == left && rightOld == right) return; // No update needed
-    if (leftOld != left && rightOld != right) clearFirstRow();
+    // if (leftOld != left && rightOld != right) clearFirstRow();
 
     uint8_t leftLength = left.length();
     uint8_t rightLength = right.length();
@@ -102,19 +102,25 @@ void printSpaceBetween(String left, String right)
         return;
     }
 
-    LCD.home();
     if(leftOld != left) {
-        clearRowSegment(0, 0, leftLength);
+        LCD.home();
         LCD.print(left);
+        clearRowSegment(0, leftLength, offset - 1); // Clear space between
         leftOld = left;
     }
 
     if(rightOld != right) {
-        clearRowSegment(0, offset, 15);
         LCD.setCursor(offset, 0);
         LCD.print(right);
         rightOld = right;
     }
+
+    // clearRowSegment(0, 0, leftLength);
+    // LCD.print(left);
+    // clearRowSegment(0, offset, 15);
+    // LCD.setCursor(offset, 0);
+    // LCD.print(right);
+    // LCD.print(left);
 }
 
 void showTemperature(uint8_t startPos, uint16_t temp)

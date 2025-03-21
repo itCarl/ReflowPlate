@@ -13,7 +13,8 @@ var cfg = {
 var s = t => t/1000;
 var isEmpty = str => !str?.length;
 var byId = id => d.getElementById(id);
-var onClick = (id, cb) => d.getElementById(id).addEventListener('click', cb);
+var upt = (id, val) => { if(byId(id).innerHTML.trim() != val) byId(id).innerHTML = val };
+var onClick = (id, cb) => byId(id).addEventListener('click', cb);
 window.addEventListener('load', onLoad);
 
 function clearProfiles()
@@ -38,8 +39,7 @@ function enrichData(data)
             time: entryTime.toLocaleTimeString(),
             temp: entry.temp,
             setpoint: entry.setpoint,
-            timestamp: entry.timestamp,
-            pwr: entry.setpoint <= 15 ? entry.pwr : 0,
+            timestamp: entry.timestamp
         };
     });
 }
@@ -61,6 +61,7 @@ function initWebSocket()
 function onOpen(event)
 {
     console.log('Connection opened');
+    clearProfiles();
     getConfig();
     start = new Date();
 }
@@ -102,9 +103,16 @@ function onMessage(event)
         });
     }
 
+    if(data.metaB) {
+        upt('pwr', data.metaB.pwr);
+    }
+
     if(data.meta) {
         // process Metadata
         let metaData = data.meta;
+        upt('mode', metaData.mode);
+        upt('connectedClients', metaData.cc);
+
         byId('inP').placeholder = cfg.states.kp = metaData.kp;
         byId('inI').placeholder = cfg.states.ki = metaData.ki;
         byId('inD').placeholder = cfg.states.kd = metaData.kd;
@@ -150,7 +158,6 @@ function onMessage(event)
         const mostRecentData = tempData[tempData.length - 1];
         byId('currentTemp').innerHTML = mostRecentData.temp;
         byId('setpointTemp').innerHTML = mostRecentData.setpoint;
-        byId('pwr').innerHTML = mostRecentData.pwr;
 
         myChart.setOption({
             xAxis: {

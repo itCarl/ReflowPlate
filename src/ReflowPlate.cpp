@@ -34,7 +34,6 @@ void ReflowPlate::setup()
     initStorage();
 
     Input = therm1->readCelsius();
-    Setpoint = Input-5;
 
     LCD.print(".");
     delay(1000);
@@ -65,7 +64,8 @@ void ReflowPlate::setup()
     lastTime = millis();
     windowStartTime = millis();
 
-    rawPotiValue = oldRawPotiValue = potiValue = roundToNearestFive(readPoti());
+    rawPotiValue = oldRawPotiValue = readPoti();
+    potiValue = roundToNearestFive(rawPotiValue);
     DEBUG_PRINTLN(potiValue);
 
     PLOT_PRINTLN("Setpoint,Temp,OnTime%,Time");
@@ -149,7 +149,11 @@ void ReflowPlate::loop()
         }
         PLOT_PRINTF("%.2f,%.2f,%d,%.2f\n", Setpoint, Input, (uint8_t)((Output * 100) / WindowSize), (double)(millis() / 1000.0));
 
+
+        notfiyPwr();
     }
+
+
 
     if(millis() - lastControlTime > controlInterval)
     {
@@ -161,8 +165,6 @@ void ReflowPlate::loop()
             potiValue = roundToNearestFive(rawPotiValue);
             lastPotiChangeTime = millis();
             potiValueChanged = true;
-        } else {
-            rawPotiValue = potiValue;
         }
 
         if(potiValueChanged && (mode == 1 || mode == 3)) {
@@ -234,7 +236,7 @@ void ReflowPlate::loop()
     }
 
     unsigned long onTime = Output;
-    if ((Output > (millis() - windowStartTime)) && (mode != 1 && Setpoint >= IDLE_SAFETY_TEMPERATURE)) {
+    if ((Output > (millis() - windowStartTime)) && (mode != 1 || Setpoint >= IDLE_SAFETY_TEMPERATURE)) {
         if(!relayActive) {
             relayActive = true;
             digitalWrite(RELAY, HIGH);
@@ -273,7 +275,6 @@ void ReflowPlate::loop()
     // buffer temperature data
     TemperatureData td;
     td.timestamp = millis();
-    td.pwr = (uint8_t)((Output * 100) / WindowSize);
     td.input = round(Input, 1);
     td.setpoint = round(Setpoint, 1);
     temperatureData.push(td);
@@ -287,6 +288,10 @@ void ReflowPlate::loop()
     DEBUG_PRINTF("Relay State: %s\n", relayActive ? "On" : "Off");
     DEBUG_PRINTF("Free Heap: %d\n", ESP.getFreeHeap());
     DEBUG_PRINTLN("");
+
+    if(!initialized) {
+        initialized = true;
+    }
 }
 
 void ReflowPlate::restart()
@@ -338,7 +343,7 @@ void ReflowPlate::initConnection()
     WiFi.begin(clientSSID, clientPass);
     uint8_t connectionCounter = 0;
 
-    while (WiFi.waitForConnectResult() != WL_CONNECTED) {
+    while (WiFi.waitForConnectResult(1000) != WL_CONNECTED) {
         LCD.print(".");
         DEBUG_PRINT("Connection Failed! SSID: ");
         DEBUG_PRINTLN(clientSSID);
@@ -364,7 +369,6 @@ void ReflowPlate::initConnection()
             // Serial.println("Connection Failed! Rebooting...");
             // ESP.restart();
         }
-        delay(2500);
         connectionCounter++;
     }
 
@@ -376,15 +380,7 @@ void ReflowPlate::initConnection()
     LCD.print("done");
     delay(3000);
     if(connectionCounter < 5) {
-        LCD.clear();
-        LCD.home();
-        LCD.print("IP-Address:");
-        LCD.setCursor(0, 1);
-        LCD.print(WiFi.localIP());
-        DEBUG_PRINTLN("Ready");
-        DEBUG_PRINT("IP-Address: ");
-        DEBUG_PRINTLN(WiFi.localIP());
-        delay(5000);
+        initAP();
     }
     LCD.clear();
     LCD.home();
@@ -392,5 +388,13 @@ void ReflowPlate::initConnection()
 
 void ReflowPlate::initAP()
 {
-    //
+    LCD.clear();
+    LCD.home();
+    LCD.print("IP-Address:");
+    LCD.setCursor(0, 1);
+    LCD.print(WiFi.localIP());
+    DEBUG_PRINTLN("Ready");
+    DEBUG_PRINT("IP-Address: ");
+    DEBUG_PRINTLN(WiFi.localIP());
+    delay(5000);
 }

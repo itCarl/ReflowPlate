@@ -7,6 +7,10 @@
         <title> ReflowPlate </title>
         <link rel="icon" href="/images/favicon.ico">
 
+        <!-- Scripts -->
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"></script>
+        <script type="text/javascript" src="/script.js"></script>
+
         <!-- Fonts -->
         <link rel="dns-prefetch" href="//fonts.gstatic.com">
         <link href="https://fonts.googleapis.com/css?family=Nunito" rel="stylesheet">
@@ -27,6 +31,12 @@
                 </div>
                 <h3>Reflow Plate</h3>
                 <div class="quickActions">
+                    <div id="mode">
+                        1
+                    </div>
+                    <div id="connectedClients">
+                        1
+                    </div>
                     <div id="btnLock" class="btnLock" title="lock physical controls"><i class="fa-solid fa-spinner fa-pulse fa-fw"></i></div>
                     <div id="btnRestart" title="restart controller"><i class="fa-solid fa-arrow-rotate-left"></i></div>
                 </div>
@@ -84,19 +94,19 @@
                 <div class="content">
                     <div class="container info" style="padding-bottom: 1rem;">
                         <div class="row">
-                            <div class="column">Power %</div>
+                            <div class="column">Power &#37;</div>
                             <div class="column">Temperature</div>
                             <div class="column">Setpoint</div>
                         </div>
                         <div class="row">
-                            <div class="column"><span id="pwr">0</span>%</div>
+                            <div class="column"><span id="pwr">0</span>&#37;</div>
                             <div class="column"><span id="currentTemp">200</span>°C</div>
                             <div class="column"><span id="setpointTemp">200</span>°C</div>
                         </div>
                     </div>
                     <div class="chart-wrapper">
                         <div id="chartSkeleton" class="skeleton"></div>
-                        <div id="mainChart" style="height: 100%;"></div>
+                        <div id="mainChart"></div>
                     </div>
                 </div>
             </div>
@@ -107,13 +117,8 @@
                 <span class="bold">ReflowPlate management software</span> <span class="small">by Maximilian Mewes</span>
             </p>
             <p>
-                Version v<span id="version">-.-.-</span> | Build: <span id="buildTime">--.--.---- --:--</span> |
+                Version v<span id="version">%VERSION%</span> &#124; Build: <span id="buildTime">%BUILD_TIME%</span>
             </p>
         </footer>
-
-        <!-- Scripts -->
-        <!-- <script src="https://cdn.plot.ly/plotly-3.0.0.min.js" charset="utf-8"></script> -->
-        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"></script>
-        <script type="text/javascript" src="/script.js"></script>
     </body>
 </html>

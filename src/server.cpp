@@ -45,9 +45,11 @@ void notify()
 
     JsonObject meta = doc["meta"].to<JsonObject>();
     meta["freeHeap"] = ESP.getFreeHeap();
+    meta["cc"] = ws.count();
     meta["kp"] = Kp;
     meta["ki"] = Ki;
     meta["kd"] = Kd;
+    meta["mode"] = mode;
     meta["sprof"] = selectedProfile->getId();
     meta["controlsLocked"] = controlsLocked;
 
@@ -56,6 +58,22 @@ void notify()
 
     serializeJson(doc, out);
     ws.textAll(out);
+}
+
+void notfiyPwr()
+{
+    static unsigned long lastUpdate = 0;
+
+    uint16_t currentPwr = (uint16_t)((Output * 100) / WindowSize);
+    if (millis() - lastUpdate > 500) {
+        lastUpdate = millis();
+        JsonDocument doc;
+        String out;
+        JsonObject meta = doc["metaB"].to<JsonObject>();
+        meta["pwr"] = currentPwr;
+        serializeJson(doc, out);
+        ws.textAll(out);
+    }
 }
 
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len)
@@ -153,27 +171,11 @@ String processor(const String& var)
 {
   // return "no data.";
 
-  // if(var == "BATTERY_VOLTAGE") {
-  //   return "0.00 v";
-  // }
-  // else if(var == "BATTERY_LEVEL") {
-  //   return "0 &#x25;";
-  // }
-  // else if(var == "BATTERY_CAPACITY") {
-  //   return String(BATTERY_CAPACITY) + "mAh (" + String((3.7f * BATTERY_CAPACITY)/1000) + " Wh)";
-  // }
-  // else if(var == "AIRFLOW") {
-  //   return String(sensorValue);
-  // }
-  // else if(var == "VERSION") {
-  //   return String(BLSS_VERSION);
-  // }
-  // else if(var == "ESP_CHIPID") {
-  //   return String(ESP.getChipId());
-  // }
-  // else if(var== "WIFI_MAC") {
-  //   return String(WiFi.macAddress());
-  // }
+  if(var == "VERSION") {
+    return String(VERSION);
+  } else if(var == "BUILD_TIME") {
+    return String(BUILD_TIME);
+  }
 
   return String();
 }

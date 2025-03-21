@@ -16,6 +16,7 @@ body {
     background-color: #131424;
     width: 100vw;
     padding: 4rem 0 0 0;
+    margin: 0;
 }
 
 hr {
@@ -125,6 +126,8 @@ button {
 
 .header .quickActions div {
     display: inline;
+}
+.header .quickActions div:not(:first-child) {
     cursor: pointer;
 }
 
@@ -239,6 +242,10 @@ button {
 
 .small {
     font-size: .875em;
+}
+
+#mainChart {
+    height: 100%;
 }
 
 footer {
